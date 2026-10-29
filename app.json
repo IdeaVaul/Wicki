@@ -38,13 +38,20 @@
             "backgroundColor": "#0E1422"
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "owner": "theboss4",
     "extra": {
       "eas": {
         "projectId": "370b232e-94c1-4f54-9706-755165ac5c84"
       }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/370b232e-94c1-4f54-9706-755165ac5c84"
     }
   }
 }

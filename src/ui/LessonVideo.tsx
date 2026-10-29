@@ -45,7 +45,7 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
     const ms = (p: string) => words(p) * 400 / rate;
     if (sound) {
       parts.forEach((p, k) => { try { Speech.speak(p, { language: TTS_LANG[S.lang], voice: femaleVoice(S.lang), rate: 0.95 * rate, onStart: () => { if (tok.current === my) setPart(k); },
-        onDone: k === parts.length - 1 ? done : undefined, onError: () => timers.current.push(setTimeout(done, ms(p))) }); } catch { } });
+        onDone: k === parts.length - 1 ? done : undefined, onError: () => void timers.current.push(setTimeout(done, ms(p))) }); } catch { } });
       const e = parts.reduce((a, p) => a + ms(p), 0) * 1.15 + 3000;
       const wd = () => timers.current.push(setTimeout(async () => { if (tok.current !== my) return; let sp = false; try { sp = await Speech.isSpeakingAsync(); } catch { } if (sp) wd(); else done(); }, e));
       wd();

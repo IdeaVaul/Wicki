@@ -41,7 +41,7 @@ export default function Video() {
       else { setPlaying(false); setEnded(true); update(s => { s.vids = s.vids || {}; if (!s.vids[v.id]) { s.vids[v.id] = 1; addXP(s, 10); } }); }
     }, 700)); };
     const est = vidWords(txt) * 450 / rate + 3000;
-    if (sound) { try { Speech.speak(txt, { language: TTS_LANG[S.lang], voice: femaleVoice(S.lang), rate: 0.95 * rate, onDone: done, onError: () => timers.current.push(setTimeout(done, vidWords(txt) * 400 / rate)) }); } catch { timers.current.push(setTimeout(done, est)); } }
+    if (sound) { try { Speech.speak(txt, { language: TTS_LANG[S.lang], voice: femaleVoice(S.lang), rate: 0.95 * rate, onDone: done, onError: () => void timers.current.push(setTimeout(done, vidWords(txt) * 400 / rate)) }); } catch { timers.current.push(setTimeout(done, est)); } }
     else timers.current.push(setTimeout(done, vidWords(txt) * 400 / rate));
     const wd = () => timers.current.push(setTimeout(async () => { if (tok.current !== my) return; let sp = false; try { sp = await Speech.isSpeakingAsync(); } catch { } if (sp) wd(); else done(); }, est));
     if (sound) wd();
