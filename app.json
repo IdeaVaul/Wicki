@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Wicki",
+    "slug": "wick",
+    "scheme": "wick",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.bahradine.wick",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.bahradine.wick",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2E6BF6"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "backgroundColor": "#0E1422"
+          }
+        }
+      ]
+    ],
+    "owner": "theboss4",
+    "extra": {
+      "eas": {
+        "projectId": "370b232e-94c1-4f54-9706-755165ac5c84"
+      }
+    }
+  }
+}
