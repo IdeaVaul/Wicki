@@ -1,0 +1,2 @@
+# Wicki
+Learn Trading
