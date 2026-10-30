@@ -15,15 +15,17 @@ function Inner() {
     <StatusBar style={dark ? 'light' : 'dark'} />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="lesson" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-      <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
+      {/* Helskärmsvyer visas som vanliga skärmar som glider upp, inte som iOS-modaler. En ersatt (replace) iOS-modal kunde lämna
+          ett osynligt lager kvar ovanpå flikarna så att Kurs, Öva och Profil slutade svara på tryck. */}
+      <Stack.Screen name="lesson" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+      <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="videos" />
       <Stack.Screen name="sim" />
       <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
       <Stack.Screen name="legal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="video" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
-      <Stack.Screen name="myths" options={{ presentation: 'fullScreenModal' }} />
-      <Stack.Screen name="pause" options={{ presentation: 'fullScreenModal' }} />
+      <Stack.Screen name="video" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+      <Stack.Screen name="myths" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+      <Stack.Screen name="pause" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
   </>;
 }

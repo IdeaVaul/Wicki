@@ -23,7 +23,10 @@ export default function Onboarding() {
     buzz('tap'); if (step < 4) { setStep(step + 1); return; }
     const skip = [0, SECTIONS[1]?.from || 0, (SECTIONS.find(x => x.t === 'Strategier') || SECTIONS[4])?.from || 0];
     update(s => { s.goal = goal; if (level < 3) UNITS.slice(0, skip[level]).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); s.onb = true; });
-    if (level === 3) router.replace({ pathname: '/lesson', params: { mode: 'placement' } }); else if (level === 0) router.replace({ pathname: '/video', params: { id: 'v1' } }); else router.replace('/');
+    // Först till flikarna, sedan nästa steg ovanpå, så att Tillbaka alltid landar på Hem.
+    router.replace('/');
+    if (level === 3) setTimeout(() => router.push({ pathname: '/lesson', params: { mode: 'placement' } }), 60);
+    else if (level === 0) setTimeout(() => router.push({ pathname: '/video', params: { id: 'v1' } }), 60);
   };
   return <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: ins.top + 8 }}>
     <Row style={{ paddingHorizontal: 16 }}>
