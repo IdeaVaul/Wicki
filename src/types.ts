@@ -59,4 +59,6 @@ export type SimState = { v: 2; mk: 'stock' | 'fx' | 'crypto' | 'gold'; mode: 'fr
   pos: SimPos | null; trades: SimTrade[]; risk: number; sm: number; tp: number; end: number; res: null | 'pass' | 'fail' | 'time' };
 
 /** Lektionsvideo före varje lektion */
-export type LvScene = { k: 'intro' | 'c' | 'outro'; t?: string; d?: string; fig?: string | null; seed?: number; list?: string[] };
+export type LvScene = { k: 'intro' | 'c' | 'cx' | 'outro'; t?: string; d?: string; fig?: string | null; seed?: number; list?: string[];
+  /** Nummer på begreppet, krok, exempel, misstag och sammanfattning (per språk sv, en, fr, ar). */
+  n?: number; hook?: string[]; ex?: string[]; er?: string[]; key?: string[] };

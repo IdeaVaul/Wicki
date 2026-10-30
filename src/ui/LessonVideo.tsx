@@ -29,7 +29,8 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
   const tok = useRef(0); const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const fade = useRef(new Animated.Value(0)).current; const talk = useRef(new Animated.Value(0)).current;
   const clear = () => { timers.current.forEach(x => clearTimeout(x)); timers.current = []; try { Speech.stop(); } catch { } };
-  const txtOf = (i: number) => lvSay(sc[i], lv.title, t, ar);
+  const txtOf = (i: number) => lvSay(sc[i], lv.title, t, ar, S.lang);
+  const LIX = ({ sv: 0, en: 1, fr: 2, ar: 3 } as Record<string, number>)[S.lang] ?? 0;
   const est = (i: number) => words(txtOf(i)) * 400 / rate + 650;
   const total = sc.reduce((a, _, i) => a + est(i), 0);
 
@@ -66,7 +67,9 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
 
   let pos = 0; for (let i = 0; i < si; i++) pos += est(i); pos = ended ? total : pos + (playing ? Math.min(est(si) * 0.97, now - t0.current) : 0); pos = Math.max(0, pos);
   const frac = Math.min(1, pos / total);
-  const s = sc[si]; const nC = sc.length - 2; const parts = lvParts(txtOf(si));
+  const s = sc[si]; const nC = sc.filter(x => x.k === 'c').length; const parts = lvParts(txtOf(si));
+  // I exempelscenen: vilken del (exempel eller misstag) läses just nu?
+  const exParts = s.k === 'cx' ? lvParts(s.ex![LIX]).length : 0; const onErr = s.k === 'cx' && part >= exParts;
   const cap = cc && s.k === 'c' && !(!s.fig && part <= 1) ? parts[part] || '' : '';
   const rise = { opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] };
   const W = (txt: string, sz: number, col: string, w: 'b' | 'x' = 'x', center = true) => <T raw w={w} s={sz} c={col} center={center}>{txt}</T>;
@@ -78,12 +81,19 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
         {s.list!.map((x, k) => <View key={k} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingVertical: 4, paddingLeft: rtl ? 10 : 4, paddingRight: rtl ? 4 : 10, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
           <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: MINT, alignItems: 'center', justifyContent: 'center' }}><T raw w="x" s={11} c={INK}>{String(k + 1)}</T></View>{W(t(x), 12.5, '#fff', 'b')}</View>)}</View></Animated.View>
     : s.k === 'outro'
-      ? <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 64 }, rise]}><Wick mood="cheer" size={64} lit anim="jump" />{W(t('Nu testar vi!'), 24, '#fff')}{W(t('Svara på frågorna för att klara steget.'), 14, 'rgba(255,255,255,0.75)', 'b')}</Animated.View>
+      ? <Animated.View style={[{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingBottom: 60, paddingHorizontal: 16 }, rise]}><Wick mood="cheer" size={s.key ? 50 : 64} lit anim="jump" />
+        {s.key ? <View style={{ backgroundColor: 'rgba(52,227,154,0.12)', borderColor: 'rgba(52,227,154,0.4)', borderWidth: 1, borderRadius: 14, padding: 10, gap: 3, maxWidth: '96%' }}>{W(t('Det viktigaste').toUpperCase(), 10.5, MINT)}{W(s.key[LIX], 13.5, '#fff', 'b')}</View> : null}
+        {W(t('Nu testar vi!'), 22, '#fff')}{s.key ? null : W(t('Svara på frågorna för att klara steget.'), 14, 'rgba(255,255,255,0.75)', 'b')}</Animated.View>
       : <View style={{ flex: 1 }}>
         <Animated.View style={[{ alignSelf: rtl ? 'flex-end' : 'flex-start', flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 8, margin: 10, padding: 5, paddingHorizontal: 6, borderRadius: 12, backgroundColor: 'rgba(5,16,12,0.75)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', maxWidth: '92%' }, rise]}>
-          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: MINT }}><T raw w="x" s={12} c={INK}>{`${si}/${nC}`}</T></View>
+          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: MINT }}><T raw w="x" s={12} c={INK}>{`${s.n || si}/${nC}`}</T></View>
           <T raw w="x" s={14.5} c="#fff" lines={1} style={{ flexShrink: 1 }}>{t(s.t!)}</T></Animated.View>
-        {s.fig ? <Animated.View style={[{ flex: 1, paddingHorizontal: 6, paddingBottom: 56, justifyContent: 'center' }, { opacity: fade, transform: [{ scale: fade.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }] }]}><FigView fig={figSpec(s.fig, s.seed)} /></Animated.View>
+        {s.k === 'cx' ? <Animated.View style={[{ flex: 1, paddingHorizontal: 10, paddingBottom: 58, gap: 6, justifyContent: 'flex-start' }, rise]}>
+            {[['bulb', MINT, 'Exempel', s.ex![LIX], !onErr], ['warning', '#FFB547', 'Vanligt misstag', s.er![LIX], onErr]].map(([ic, col, lab, txt, on]) =>
+              <View key={lab as string} style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 8, padding: on ? 9 : 6, borderRadius: 12, borderWidth: 1, borderColor: on ? (col as string) : 'rgba(255,255,255,0.1)', backgroundColor: on ? 'rgba(255,255,255,0.08)' : 'rgba(5,16,12,0.55)', opacity: on ? 1 : 0.55 }}>
+                <Ionicons name={ic as any} size={18} color={col as string} />
+                <View style={{ flex: 1, gap: 2 }}><T raw w="x" s={11} c={col as string}>{t(lab as string).toUpperCase()}</T>{on ? <T raw w="b" s={12.5} c="#fff" lines={6}>{txt as string}</T> : null}</View></View>)}</Animated.View>
+          : s.fig ? <Animated.View style={[{ flex: 1, paddingHorizontal: 6, paddingBottom: 56, justifyContent: 'center' }, { opacity: fade, transform: [{ scale: fade.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }] }]}><FigView fig={figSpec(s.fig, s.seed)} /></Animated.View>
           : <Animated.View style={[{ flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingBottom: 64, gap: 8 }, rise]}>
             <T raw w="x" s={28} c={MINT} style={{ lineHeight: 32 }}>{t(s.t!)}</T>
             <T raw w="b" s={17} c="#fff">{(lvParts(t(s.d!))[0] || '')}</T></Animated.View>}
@@ -98,7 +108,7 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
       <Pressable onPress={toggle} accessibilityLabel={t(playing ? 'Pausa' : 'Spela upp')} style={{ aspectRatio: 16 / 11 }}>
         <BgCandles seed={si * 13 + 5} n={30} style={{ top: 0, bottom: 0, left: 0, right: 0 }} opacity={0.14} />
         {stage}
-        {s.k === 'c' ? <Animated.View pointerEvents="none" style={{ position: 'absolute', bottom: 50, [rtl ? 'left' : 'right']: 6, transform: [{ translateY: talk.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }}><Wick size={44} lit anim="none" /></Animated.View> : null}
+        {s.k === 'c' || s.k === 'cx' ? <Animated.View pointerEvents="none" style={{ position: 'absolute', bottom: 50, [rtl ? 'left' : 'right']: 6, transform: [{ translateY: talk.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }] }}><Wick size={44} lit anim="none" /></Animated.View> : null}
         {cap ? <View pointerEvents="none" style={{ position: 'absolute', left: 12, right: 52, bottom: 54, alignItems: 'center' }}>
           <View style={{ backgroundColor: 'rgba(0,0,0,0.68)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}><T raw w="b" s={13.5} c="#fff" center>{cap}</T></View></View> : null}
         {!playing && !ended && s.k !== 'outro' ? <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 40, alignItems: 'center', justifyContent: 'center' }}>
@@ -128,7 +138,7 @@ export function LessonVideo({ ex, onEnded }: { ex: Ex; onEnded?: () => void }) {
       <T raw w="x" s={21}>{t(lv.title)}</T>
     </View>
     <View style={{ gap: 6 }}>
-      {sc.map((x, i) => { const st = ended || i < si ? 'done' : i === si ? 'on' : ''; const title = x.k === 'intro' ? t('Introduktion') : x.k === 'outro' ? t('Nu testar vi!') : t(x.t!);
+      {sc.map((x, i) => { const st = ended || i < si ? 'done' : i === si ? 'on' : ''; const title = x.k === 'intro' ? t('Introduktion') : x.k === 'outro' ? t('Nu testar vi!') : x.k === 'cx' ? `${t('Exempel och misstag')} · ${t(x.t!)}` : t(x.t!);
         return <Pressable key={i} testID={'lv-ch-' + i} accessibilityRole="button" onPress={() => go(i)}
           style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, padding: 11, borderRadius: 14, borderWidth: 1, borderColor: st === 'on' ? c.pri : c.glassB, backgroundColor: st === 'on' ? c.priSoft : c.glass }}>
           <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: st ? c.pri : c.track }}>
