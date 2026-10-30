@@ -10,7 +10,9 @@ import { Wick } from '../src/ui/Wick';
 import type { ChartLine, SimState } from '../src/types';
 import { kr } from '../src/engine/util';
 import { isMinorAge } from '../src/engine/course';
+import { plusOn, simPlusLock } from '../src/engine/plus';
 import { SIMMK, SIMSTOPS, simClose, simEquity, simF, simGet, simNew, simOpen, simOrder, simPrice, simSeries, simStats, simStep, simUnreal, type MkKey } from '../src/engine/sim';
+import { track } from '../src/analytics';
 
 /** Handelssimulator: riskfri trading med låtsaspengar (aktie, forex, krypto, guld) och prop-utmaning. */
 export default function Sim() {
@@ -25,6 +27,8 @@ export default function Sim() {
   useEffect(() => { if (!play) return; const id = setInterval(() => step(1), 520); return () => clearInterval(id); }, [play]);
   useEffect(() => { if (s && (s.res || s.i >= s.end) && play) setPlay(false); }, [s?.res, s?.i]);
   const minor = isMinorAge(S.age);
+  // Utan Plus (t.ex. när Plus tagit slut): tillbaka till aktier i fri träning.
+  useEffect(() => { if (s && !plusOn(S) && (s.mk !== 'stock' || s.mode === 'chal') && !s.pos) update(x => { simNew(x, 'stock', 'free'); }); }, [plusOn(S), s?.mk, s?.mode]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (s && minor && s.mode === 'chal' && !s.res && !s.pos) update(x => { simNew(x, s.mk, 'free'); }); }, [minor, s?.mode]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!s) return <View style={{ flex: 1, backgroundColor: c.bg }} />;
   const M = SIMMK[s.mk], cs = simSeries(s), vis = cs.slice(Math.max(0, s.i - 44), s.i + 1), eq = simEquity(s), pl = eq - s.start, price = simPrice(s), p = s.pos, chal = s.mode === 'chal';
@@ -46,8 +50,8 @@ export default function Sim() {
         <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={c.muted} /></Pressable></Row>
       <T w="x" s={30}>Handelssimulator</T>
       <T c={c.muted}>Riskfri träning med låtsaspengar på påhittade grafer.</T>
-      {minor ? <Card style={{ padding: 12, borderColor: c.down, backgroundColor: c.downSoft }}><T s={14}>Under 18 handlar du utan hävstång och kan inte blanka. Prop-utmaningen låses upp när du är 18 år.</T></Card> : seg<'free' | 'chal'>([['free', 'Fri träning'], ['chal', 'Prop-utmaning']], s.mode, v => { setPlay(false); setSide(0); update(x => { simNew(x, s.mk, v); }); }, 'mode')}
-      {seg<MkKey>((Object.keys(SIMMK) as MkKey[]).map(k => [k, SIMMK[k].n]), s.mk, v => { if (p) { say(t('Stäng positionen först.')); return; } setPlay(false); setSide(0); update(x => { simNew(x, v, s.mode); }); }, 'mk')}
+      {minor ? <Card style={{ padding: 12, borderColor: c.down, backgroundColor: c.downSoft }}><T s={14}>Under 18 handlar du utan hävstång och kan inte blanka. Prop-utmaningen låses upp när du är 18 år.</T></Card> : seg<'free' | 'chal'>([['free', 'Fri träning'], ['chal', plusOn(S) ? 'Prop-utmaning' : '◆ ' + t('Prop-utmaning')]], s.mode, v => { if (v === 'chal' && simPlusLock(S, 'chal')) { router.push({ pathname: '/plus', params: { from: 'sim_prop' } }); return; } setPlay(false); setSide(0); update(x => { simNew(x, s.mk, v); }); }, 'mode')}
+      {seg<MkKey>((Object.keys(SIMMK) as MkKey[]).map(k => [k, simPlusLock(S, k) ? '◆ ' + t(SIMMK[k].n) : SIMMK[k].n]), s.mk, v => { if (simPlusLock(S, v)) { router.push({ pathname: '/plus', params: { from: 'sim_' + v } }); return; } if (p) { say(t('Stäng positionen först.')); return; } setPlay(false); setSide(0); update(x => { simNew(x, v, s.mode); }); }, 'mk')}
       {chal ? <Card style={{ gap: 8, padding: 12 }}>
         <Row style={{ justifyContent: 'space-between' }}><T w="b">Prop-utmaning</T><T raw s={12} c={c.muted}>{`${Math.max(0, s.end - s.i)} ${t('ljus kvar')}`}</T></Row>
         <Row><View style={{ width: 120 }}><T s={12} c={c.muted}>Mål +8 %</T></View>{bar((eq - s.start) / (s.start * 0.08) * 100, c.up)}</Row>
@@ -75,7 +79,7 @@ export default function Sim() {
         </View>
         {o.capped ? <T s={13} c={c.muted}>Positionen begränsades av hävstångstaket. Din risk blir lägre än vald.</T> : null}
         <Row><Btn label={t(o.side > 0 ? 'Bekräfta köp' : 'Bekräfta blankning')} kind={o.side > 0 ? 'good' : 'bad'} disabled={o.qty <= 0} testID="sim-confirm" style={{ flex: 1 }}
-          onPress={() => { const sd = o.side as 1 | -1; update(x => { simOpen(simGet(x), sd, minor); }); setSide(0); buzz('tap'); }} />
+          onPress={() => { const sd = o.side as 1 | -1; track('sim_trade', { mk: s.mk, mode: s.mode, side: sd }); update(x => { simOpen(simGet(x), sd, minor); }); setSide(0); buzz('tap'); }} />
           <Btn label={t('Avbryt')} kind="ghost" testID="sim-cancel" onPress={() => setSide(0)} /></Row>
       </Card> : null}
       {s.res ? null : <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../../src/store';
 import { ALLN, nodeName, adultLock } from '../../src/engine/course';
+import { plusLock } from '../../src/engine/plus';
 import { GOAL, Q, addXP, dueKeys, heartsNow, litToday, streakNow } from '../../src/engine/state';
 import { GREET, WTIPS } from '../../src/data/mascot';
 import { GREET2 } from '../../src/data/skin-dict';
@@ -25,7 +26,7 @@ export default function Home() {
   if (!S.onb) return <Redirect href="/onboarding" />;
   const copy = JSON.parse(JSON.stringify(S));
   const dx = Math.min(Q(copy).xp, GOAL(S)), g = GOAL(S), pct = Math.round(dx / g * 100);
-  const cur = ALLN.find(n => !S.done[n.id] && !adultLock(S, n));
+  const cur = ALLN.find(n => !S.done[n.id] && !adultLock(S, n) && !plusLock(S, n));
   const G = GREET[S.lang] || GREET.sv, G2 = GREET2[S.lang] || GREET2.sv; const hr = new Date().getHours();
   const hi = G.t[hr < 5 ? 3 : hr < 12 ? 0 : hr < 18 ? 1 : hr < 23 ? 2 : 3];
   const msg = !S.lessons ? G2.r1 : g - Q(copy).xp > 0 ? G2.r2 : G2.r3;

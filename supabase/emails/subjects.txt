@@ -1,0 +1,3 @@
+Ämnesrader (Supabase → Authentication → Emails → Subject):
+Confirm signup:  {{ if eq (print .Data.app) "wicki" }}Bekräfta ditt Wicki-konto{{ else }}Bekräfta din e-post{{ end }}
+Reset password:  {{ if eq (print .Data.app) "wicki" }}Nytt lösenord till Wicki{{ else }}Välj ett nytt lösenord{{ end }}

@@ -37,6 +37,10 @@ export type State = {
   lessons: number; perfect: number; best60: number;
   haptics: boolean; theme: 'system' | 'light' | 'dark'; skin2?: number; vids?: Record<string, number>; vrate?: number; vsound?: boolean; lvs?: Record<string, number>; lvcc?: boolean; age?: '' | 'u16' | 'u18' | 'y' | 'o';
   tts: boolean; big: boolean; hc: boolean; a: A11y;
+  /** Wicki Plus. since = när nuvarande abonnemang startade (styr lojalitetspriset), cancel = när det sades upp, off = förskjutning i testläge. */
+  plus?: { plan: 'm' | 'y'; since: number; cancel?: number; test?: boolean; off?: number } | null;
+  /** Samtycke till anonym statistik (PostHog) och kraschrapporter (Sentry). undefined = inte frågat än. */
+  stats?: boolean; did?: string;
 };
 
 /** Videoskolan */

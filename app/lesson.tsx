@@ -17,6 +17,7 @@ import { KidButton, KidSheet, KidTopic, PatCard, kidConcept, kidPattern } from '
 import { speak, hush } from '../src/speech';
 import { LessonVideo } from '../src/ui/LessonVideo';
 import { breakDue } from '../src/session';
+import { track } from '../src/analytics';
 
 type Mode = 'node' | 'practice' | 'review' | 'hunt' | 'next' | 'blitz' | 'placement' | 'pat' | 'scam' | 'vquiz';
 type LS = { lvEnd?: boolean;
@@ -92,6 +93,7 @@ export default function Lesson() {
     if (timed) xp = Math.min(25, l.ok); else if (practice) xp = 10; else if (node && S.done[node.id]) xp = 5 + (perfect ? 5 : 0); else xp = (node?.k === 'test' ? 20 : 10) + (perfect ? 5 : 0);
     let pass = 0; if (placement) { for (let u = 0; u < 5; u++) { const r = l.place[u]; if (r && r.n && r.ok >= Math.max(1, r.n - 1)) pass++; else break; } }
     const newBest = timed && l.ok > (S.best60 || 0);
+    track('lesson_done', { mode, unit: node?.u, kind: node?.k, perfect, mistakes: l.mist, xp, secs: Math.round((Date.now() - l.start) / 1000) });
     update(s => { if (node) s.done[node.id] = 1; addXP(s, xp); s.lessons++; Q(s).lessons++; if (perfect && !timed) s.perfect++; if (practice) { heartsNow(s); s.hearts = Math.min(5, s.hearts + 1); }
       if (newBest) s.best60 = l.ok; if (placement) UNITS.slice(0, pass).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); touchStreak(s); });
     buzz('done');

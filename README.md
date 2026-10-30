@@ -33,3 +33,19 @@ Bekräftelse- och återställningsmejl använder projektets Site URL, ändra den
 ## Juridik
 Användarvillkor och integritetspolicy finns i `src/data/legal.ts` (svenska + engelska) och visas under Profil › Juridik och data.
 "Radera mitt konto" anropar databasfunktionen `delete_my_account()` (Supabase), som tar bort användarens rad i `wicki_progress` och själva inloggningen.
+
+## Wicki Plus, statistik och mejl
+
+**Wicki Plus** (`app/plus.tsx`, `src/engine/plus.ts`): avancerade avsnitt (tidsramar, strategier, marknader, fundamental analys, makro, tillgångsslag) och simulatorns forex/krypto/guld + prop-utmaning kräver Plus. Lojalitetspris 49 → 39 (efter 3 mån) → 29 kr/mån (efter 12 mån), år 290 kr. Säger man upp behåller man Plus perioden ut; börjar man om börjar priset om. Testversionen gör låtsasköp (`test: true`). Innan lansering: Apple/Google-köp via RevenueCat i appen, Stripe på webben.
+
+**Statistik och kraschrapporter** (`src/analytics.ts`): PostHog och Sentry via HTTP, inga extra paket. Inget skickas utan samtycke (introduktionens sista steg eller Profil). Fyll i nycklarna i `src/config.ts`:
+- PostHog (välj EU): Project settings → Project API key (`phc_…`).
+- Sentry (plattform React Native): Settings → Projects → Client Keys → DSN.
+
+Händelser: `$screen`, `onboarding_done`, `lesson_done`, `sim_trade`, `paywall_view`, `plus_start`, `plus_cancel`, `plus_resume`, `app_error`.
+
+**Mejl via Resend** (`supabase/emails/`): Supabase-projektet delas med Presento, så mallarna väljer Wicki-design när användaren skapades från Wicki (`app: 'wicki'`) och annars en neutral text.
+1. Skapa konto på resend.com och verifiera din domän (Domains → Add domain, lägg in DNS-posterna).
+2. Resend → API Keys → skapa en nyckel med "Sending access".
+3. Supabase → Authentication → Emails → SMTP Settings: Host `smtp.resend.com`, port `465`, användare `resend`, lösenord = API-nyckeln, avsändare t.ex. `wicki@dindomän.se`.
+4. Supabase → Authentication → Emails → Templates: klistra in `confirm-signup.html` och `reset-password.html` och ämnesraderna i `subjects.txt`.

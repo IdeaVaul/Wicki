@@ -13,12 +13,14 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAccount } from '../../src/account/Account';
 import { useRefresh } from '../../src/ui/Refresh';
+import { plusOn, priceNow, YEAR_KR } from '../../src/engine/plus';
+import { PL, STATS } from '../../src/data/plus-dict';
 
 const ABOUT = ['Wicki är en app för utbildning. Inget i appen är investeringsråd eller en uppmaning att köpa eller sälja något.', 'Trading är riskfyllt. De flesta som daytradar förlorar pengar. Handla aldrig för pengar du inte har råd att förlora.', 'Graferna i appen är påhittade övningsgrafer, inte riktiga kurser. Simulatorn använder låtsaspengar.', 'För att öppna ett eget konto för aktiehandel krävs i regel att man är 18 år. Barn kan lära sig här utan att handla på riktigt.', 'Dina framsteg sparas bara på den här enheten.', 'Behöver du personlig rådgivning, vänd dig till en rådgivare med tillstånd från Finansinspektionen.'];
 const LOC: Record<Lang, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
 export default function Profile() {
   const { S, c, t, update } = useStore(); const acc = useAccount(); const [out, setOut] = useState(false); const [del, setDel] = useState(false); const [delErr, setDelErr] = useState<string | null>(null); const [delBusy, setDelBusy] = useState(false);
-  const refresh = useRefresh();
+  const refresh = useRefresh(); const PLT = PL[S.lang] || PL.sv;
   const [a11y, setA11y] = useState(false); const [about, setAbout] = useState(false);
   const lesDone = ALLN.filter(n => n.k === 'les' && S.done[n.id]).length, lesAll = ALLN.filter(n => n.k === 'les').length;
   const wd = weekDays(S); const max = Math.max(GOAL(S), ...wd.map(d => d.xp));
@@ -30,6 +32,10 @@ export default function Profile() {
       <Row style={{ alignItems: 'flex-end', height: 110 }}>{wd.map(d => <View key={d.key} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
         <View style={{ width: '70%', height: Math.max(4, d.xp / max * 80), backgroundColor: d.xp >= GOAL(S) ? c.gold : c.pri, borderRadius: 6 }} />
         <T raw s={11} c={c.muted}>{new Intl.DateTimeFormat(LOC[S.lang], { weekday: 'narrow' }).format(d.date)}</T></View>)}</Row></Card>}
+    <Card testID="plus" onPress={() => router.push({ pathname: '/plus', params: { from: 'profile' } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: c.gold }}>
+      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.goldSoft, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="diamond" size={22} color={c.gold} /></View>
+      <View style={{ flex: 1 }}><T raw w="b">{PLT.card}</T><T raw s={13} c={c.muted}>{plusOn(S) && S.plus?.plan === 'm' ? PLT.cardOn(priceNow(S)) : plusOn(S) ? PLT.cardOn(Math.round(YEAR_KR / 12)) : PLT.cardOff}</T></View>
+      <Ionicons name="chevron-forward" size={20} color={c.muted} /></Card>
     <Card testID="account" style={{ gap: 10 }}>
       {acc.email ? <>
         <Row><View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.priSoft, alignItems: 'center', justifyContent: 'center' }}><T raw w="x" s={18} c={c.pri}>{(acc.name || acc.email || '?').slice(0, 1).toUpperCase()}</T></View>
@@ -62,6 +68,7 @@ export default function Profile() {
       <View style={{ padding: 14, gap: 8 }}><T w="b">Tema</T><Row gap={8}>{([['system', 'Auto'], ['light', 'Ljust'], ['dark', 'Mörkt']] as const).map(([k, l]) => <Pill key={k} label={l} on={S.theme === k} onPress={() => update(s => { s.theme = k; })} />)}</Row></View><Divider />
       <View style={{ padding: 14, gap: 8 }}><T w="b">Dagligt mål</T><Row gap={8}>{[10, 20, 30, 50].map(g => <Pill key={g} label={g + ' XP'} on={GOAL(S) === g} onPress={() => update(s => { s.goal = g; })} />)}</Row></View><Divider />
       <SwitchRow label="Vibrationer" value={S.haptics} onChange={v => update(s => { s.haptics = v; })} />
+      <SwitchRow testID="stats" label={STATS[S.lang]?.[0] || STATS.sv[0]} sub={STATS[S.lang]?.[1] || STATS.sv[1]} value={!!S.stats} onChange={v => update(s => { s.stats = v; })} />
     </Card>
     <Btn kind="ghost" label="Om Wicki och ansvar" onPress={() => setAbout(true)} />
     <A11ySheet open={a11y} onClose={() => setA11y(false)} />

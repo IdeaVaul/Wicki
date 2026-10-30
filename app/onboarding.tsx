@@ -10,10 +10,12 @@ import { Btn, Card, Pill, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
 import { Presets } from '../src/ui/sheets';
 import { useAccount } from '../src/account/Account';
+import { STATS } from '../src/data/plus-dict';
+import { track } from '../src/analytics';
 
 export default function Onboarding() {
   const { S, c, update, buzz, rtl } = useStore(); const ins = useSafeAreaInsets();
-  const acc = useAccount();
+  const acc = useAccount(); const ST = STATS[S.lang] || STATS.sv;
   // Loggar man in med ett befintligt konto hämtas framstegen och introduktionen hoppas över.
   useEffect(() => { if (acc.email && S.onb) router.replace('/'); }, [acc.email, S.onb]);
   const [step, setStep] = useState(0); const [level, setLevel] = useState(0); const [goal, setGoal] = useState(20);
@@ -22,6 +24,7 @@ export default function Onboarding() {
   const next = () => {
     buzz('tap'); if (step < 4) { setStep(step + 1); return; }
     const skip = [0, SECTIONS[1]?.from || 0, (SECTIONS.find(x => x.t === 'Strategier') || SECTIONS[4])?.from || 0];
+    track('onboarding_done', { level, goal, stats: !!S.stats });
     update(s => { s.goal = goal; if (level < 3) UNITS.slice(0, skip[level]).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); s.onb = true; });
     // Först till flikarna, sedan nästa steg ovanpå, så att Tillbaka alltid landar på Hem.
     router.replace('/');
@@ -56,6 +59,8 @@ export default function Onboarding() {
         <T center c={c.muted}>Välj gärna flera, eller hoppa över.</T>
         <Presets />
         <T s={12.5} c={c.muted} center>Valen sparas bara som inställningar, inte som uppgifter om dig.</T>
+        <Card testID="stats-ask" style={{ gap: 8 }}><T raw w="x">{ST[0]}</T><T raw s={13.5} c={c.muted}>{ST[1]}</T>
+          <Row gap={8}>{([[true, ST[2]], [false, ST[3]]] as const).map(([v, l]) => <View key={String(v)} style={{ flex: 1 }}>{choice(S.stats === v, () => update(s => { s.stats = v; }), l, '', 'stats-' + v)}</View>)}</Row></Card>
       </>}
     </ScrollView>
     <View style={{ padding: 16, paddingBottom: ins.bottom + 16 }}>

@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useStore } from '../../src/store';
 import { ALLN, UNITS, SECTIONS, RISKY, nodeName, adultLock, isMinorAge } from '../../src/engine/course';
+import { PLUS_UNITS, isPlusSection, plusLock, plusOn } from '../../src/engine/plus';
+import { PL } from '../../src/data/plus-dict';
 import { addXP } from '../../src/engine/state';
 import { CONTENT } from '../../src/data/content';
 import { KURS } from '../../src/data/skin-dict';
@@ -36,10 +38,11 @@ export default function Course() {
   const [guide, setGuide] = useState<number | null>(null);
   const [kid, setKid] = useState<KidTopic | null>(null);
   const [w, setW] = useState(340);
-  const cur = useMemo(() => ALLN.find(n => !S.done[n.id] && !adultLock(S, n)), [S.done, S.age]);
+  const cur = useMemo(() => ALLN.find(n => !S.done[n.id] && !adultLock(S, n) && !plusLock(S, n)), [S.done, S.age, S.plus]);
+  const PLT = PL[S.lang] || PL.sv;
   if (!S.onb) return <Redirect href="/onboarding" />;
   const curU = cur ? cur.u : -1; const openU = open != null ? open : curU;
-  const go = (n: PathNode) => { setPop(null); if (adultLock(S, n)) { buzz('no'); return; } if (n.k === 'chest') { update(s => { s.done[n.id] = 1; addXP(s, 20); }); buzz('done'); return; } router.push({ pathname: '/lesson', params: { mode: 'node', id: n.id } }); };
+  const go = (n: PathNode) => { setPop(null); if (adultLock(S, n)) { buzz('no'); return; } if (plusLock(S, n)) { router.push({ pathname: '/plus', params: { from: 'course' } }); return; } if (n.k === 'chest') { update(s => { s.done[n.id] = 1; addXP(s, 20); }); buzz('done'); return; } router.push({ pathname: '/lesson', params: { mode: 'node', id: n.id } }); };
 
   const path = (ui: number) => {
     const u = UNITS[ui]; const H0 = 46, RH = 88; const n0 = u.nodes.length; const tot = H0 + n0 * RH + 50;
@@ -57,22 +60,22 @@ export default function Course() {
       <Pressable accessibilityLabel={t('Guide')} onPress={() => setGuide(ui)} style={{ position: 'absolute', left: xs[0] - 26, top: ys[0] - 26, width: 52, height: 52, borderRadius: 26, backgroundColor: c.glass, borderWidth: 1, borderColor: c.bubB, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name="book" size={22} color={c.pri} /></Pressable>
       {lab(xs[0], ys[0], <><T w="b" s={16.5}>{`Enhet ${ui + 1}`}</T><T w="b" s={15} lines={1}>{u.title}</T><T raw s={13} c={c.muted}>{`${t('Guide')} · ${dn}/${n0} ${t('nivåer klara')}`}</T></>, () => { setOpen(-1); setPop(null); }, 'h')}
-      {u.nodes.map((n, k) => { const i = k + 1; const st = adultLock(S, n) ? 'locked' : S.done[n.id] ? 'done' : n === cur ? 'cur' : (curI >= 0 && k > curI && k <= curI + 2) ? 'next' : 'locked';
+      {u.nodes.map((n, k) => { const i = k + 1; const pl = plusLock(S, n); const st = adultLock(S, n) ? 'locked' : pl && !S.done[n.id] ? 'plus' : S.done[n.id] ? 'done' : n === cur ? 'cur' : (curI >= 0 && k > curI && k <= curI + 2) ? 'next' : 'locked';
         const big = st === 'cur'; const sz = big ? 70 : 60;
-        const bg = st === 'done' ? c.pri : big ? c.gold : c.lock; const fg = st === 'done' ? c.on : big ? '#5A3B00' : st === 'next' ? c.ink : c.lockInk;
-        const ic: keyof typeof Ionicons.glyphMap = st === 'done' ? 'checkmark' : st === 'locked' && n.k !== 'chest' && n.k !== 'test' ? 'lock-closed' : ICON[n.k];
+        const bg = st === 'done' ? c.pri : big ? c.gold : st === 'plus' ? c.goldSoft : c.lock; const fg = st === 'done' ? c.on : big ? '#5A3B00' : st === 'next' ? c.ink : st === 'plus' ? c.gold : c.lockInk;
+        const ic: keyof typeof Ionicons.glyphMap = st === 'done' ? 'checkmark' : st === 'plus' ? 'diamond' : st === 'locked' && n.k !== 'chest' && n.k !== 'test' ? 'lock-closed' : ICON[n.k];
         return <React.Fragment key={n.id}>
           <Pressable testID={'node-' + n.id} accessibilityRole="button" accessibilityLabel={t(nodeName(n))} onPress={() => { buzz('tap'); setPop(pop === n.id ? null : n.id); }}
             style={({ pressed }) => ({ position: 'absolute', left: xs[i] - sz / 2, top: ys[i] - sz / 2, width: sz, height: sz, borderRadius: sz / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center',
               borderWidth: big ? 4 : 1, borderColor: big ? '#FFD95C' : st === 'done' ? 'transparent' : c.glassB, transform: [{ scale: pressed ? 0.94 : 1 }],
               shadowColor: big ? c.gold : c.pri, shadowOpacity: big || st === 'done' ? 0.6 : 0, shadowRadius: big ? 20 : 10, shadowOffset: { width: 0, height: 0 }, elevation: big ? 10 : 0 })}>
             <Ionicons name={ic} size={big ? 32 : 26} color={fg} /></Pressable>
-          {lab(xs[i], ys[i], <><T w="b" s={big ? 18 : 16.5} c={st === 'locked' ? c.muted : c.ink} lines={2}>{nodeName(n)}</T>{NKIND[n.k] && NKIND[n.k] !== nodeName(n) ? <T s={13.5} c={c.muted}>{NKIND[n.k]}</T> : null}</>, () => { buzz('tap'); setPop(pop === n.id ? null : n.id); }, 'l' + n.id)}
+          {lab(xs[i], ys[i], <><T w="b" s={big ? 18 : 16.5} c={st === 'locked' || st === 'plus' ? c.muted : c.ink} lines={2}>{nodeName(n)}</T>{NKIND[n.k] && NKIND[n.k] !== nodeName(n) ? <T s={13.5} c={c.muted}>{NKIND[n.k]}</T> : null}</>, () => { buzz('tap'); setPop(pop === n.id ? null : n.id); }, 'l' + n.id)}
           {pop === n.id ? <View style={{ position: 'absolute', left: 0, right: 0, top: ys[i] + 44, zIndex: 5, alignItems: 'center' }}>
             <Card style={{ width: 300, gap: 8, backgroundColor: c.surface, borderColor: st === 'cur' || st === 'done' ? c.bubB : c.glassB }}>
               <T w="x" s={17}>{nodeName(n)}</T>
               {k === 0 && RISKY.has(u.key) ? <RiskNote /> : null}
-              {adultLock(S, n) ? <T c={c.muted}>Den här enheten är för dig som är 18 år eller äldre.</T> : st === 'locked' || st === 'next' ? <T c={c.muted}>Klara alla nivåer ovanför för att låsa upp.</T> : <>
+              {adultLock(S, n) ? <T c={c.muted}>Den här enheten är för dig som är 18 år eller äldre.</T> : st === 'plus' ? <><T raw c={c.muted}>{PLT.lockNode}</T><Btn testID="unlock" kind="gold" label={PLT.unlock} onPress={() => go(n)} /></> : st === 'locked' || st === 'next' ? <T c={c.muted}>Klara alla nivåer ovanför för att låsa upp.</T> : <>
                 <T raw s={13} c={c.muted}>{t(`Nivå ${n.i + 1} av ${u.nodes.length}`)}</T>
                 {n.k === 'chest' && st === 'done' ? null : <Btn testID="go" label={n.k === 'chest' ? 'Öppna' : st === 'done' ? 'Öva igen +5 XP' : `Starta +${n.k === 'test' ? 20 : 10} XP`} onPress={() => go(n)} />}</>}
             </Card></View> : null}
@@ -82,14 +85,14 @@ export default function Course() {
 
   const rows: React.ReactNode[] = []; let last = -1;
   UNITS.forEach((u, ui) => { const sc = secOf(ui); if (sec != null && sc !== sec) return;
-    if (sc !== last) { last = sc; rows.push(<View key={'s' + sc} style={{ marginTop: 18, marginBottom: 2, gap: 2 }}><T w="x" s={11.5} c={c.pri} upper>{`Sektion ${sc + 1}`}</T><T w="b" s={13} c={c.muted}>{SECTIONS[sc].t}</T></View>); }
+    if (sc !== last) { last = sc; rows.push(<View key={'s' + sc} style={{ marginTop: 18, marginBottom: 2, gap: 2 }}><T w="x" s={11.5} c={c.pri} upper>{`Sektion ${sc + 1}`}</T><T w="b" s={13} c={c.muted}>{SECTIONS[sc].t}</T>{isPlusSection(SECTIONS[sc].t) && !plusOn(S) ? <T raw w="x" s={11} c={c.gold}>◆ PLUS</T> : null}</View>); }
     if (ui === openU) { rows.push(path(ui)); return; }
-    const all = u.nodes.length, dn = u.nodes.filter(n => S.done[n.id]).length; const ad = isMinorAge(S.age) && RISKY.has(u.key); const st = ad ? 'locked' : dn === all ? 'done' : ui === curU ? 'cur' : dn ? 'open' : 'locked';
+    const all = u.nodes.length, dn = u.nodes.filter(n => S.done[n.id]).length; const ad = isMinorAge(S.age) && RISKY.has(u.key); const pu = !plusOn(S) && PLUS_UNITS.has(ui) && dn < all; const st = ad ? 'locked' : pu ? 'plus' : dn === all ? 'done' : ui === curU ? 'cur' : dn ? 'open' : 'locked';
     rows.push(<Card key={u.key} testID={'unit-' + ui} onPress={() => { setOpen(ui); setPop(null); }} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 14, paddingVertical: 12 }}>
       <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1,
         backgroundColor: st === 'done' ? c.pri : st === 'locked' ? c.lock : c.goldSoft, borderColor: st === 'done' ? 'transparent' : st === 'locked' ? c.glassB : c.gold }}>
-        <Ionicons name={st === 'done' ? 'checkmark' : st === 'locked' ? 'lock-closed' : 'star'} size={20} color={st === 'done' ? c.on : st === 'locked' ? c.lockInk : c.gold} /></View>
-      <View style={{ flex: 1 }}><T w="b" s={16}>{`Enhet ${ui + 1}`}</T><T w="b" s={15} lines={2}>{u.title}</T>{RISKY.has(u.key) ? <RiskTag adult={ad} /> : null}{ad ? <T s={13} c={c.muted}>Låses upp när du är 18 år</T> : null}
+        <Ionicons name={st === 'done' ? 'checkmark' : st === 'locked' ? 'lock-closed' : st === 'plus' ? 'diamond' : 'star'} size={20} color={st === 'done' ? c.on : st === 'locked' ? c.lockInk : c.gold} /></View>
+      <View style={{ flex: 1 }}><T w="b" s={16}>{`Enhet ${ui + 1}`}</T><T w="b" s={15} lines={2}>{u.title}</T>{RISKY.has(u.key) ? <RiskTag adult={ad} /> : null}{ad ? <T s={13} c={c.muted}>Låses upp när du är 18 år</T> : null}{pu && !ad ? <T raw s={12} w="b" c={c.gold}>{'◆ ' + PLT.simLock}</T> : null}
         {st === 'done' ? null : <T raw s={13} c={c.muted}>{`${dn}/${all} ${t('nivåer klara')}`}</T>}</View>
       <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={20} color={c.muted} />
     </Card>); });
