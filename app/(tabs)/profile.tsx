@@ -12,16 +12,18 @@ import { Wick } from '../../src/ui/Wick';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAccount } from '../../src/account/Account';
+import { useRefresh } from '../../src/ui/Refresh';
 
 const ABOUT = ['Wicki är en app för utbildning. Inget i appen är investeringsråd eller en uppmaning att köpa eller sälja något.', 'Trading är riskfyllt. De flesta som daytradar förlorar pengar. Handla aldrig för pengar du inte har råd att förlora.', 'Graferna i appen är påhittade övningsgrafer, inte riktiga kurser. Simulatorn använder låtsaspengar.', 'För att öppna ett eget konto för aktiehandel krävs i regel att man är 18 år. Barn kan lära sig här utan att handla på riktigt.', 'Dina framsteg sparas bara på den här enheten.', 'Behöver du personlig rådgivning, vänd dig till en rådgivare med tillstånd från Finansinspektionen.'];
 const LOC: Record<Lang, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
 export default function Profile() {
   const { S, c, t, update } = useStore(); const acc = useAccount(); const [out, setOut] = useState(false); const [del, setDel] = useState(false); const [delErr, setDelErr] = useState<string | null>(null); const [delBusy, setDelBusy] = useState(false);
+  const refresh = useRefresh();
   const [a11y, setA11y] = useState(false); const [about, setAbout] = useState(false);
   const lesDone = ALLN.filter(n => n.k === 'les' && S.done[n.id]).length, lesAll = ALLN.filter(n => n.k === 'les').length;
   const wd = weekDays(S); const max = Math.max(GOAL(S), ...wd.map(d => d.xp));
   const stat = (v: string, l: string, col: string) => <Card style={{ flex: 1, gap: 2 }}><T raw w="x" s={22} c={col}>{v}</T><T s={12.5} c={c.muted}>{l}</T></Card>;
-  return <Screen><Header /><ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}>
+  return <Screen><Header /><ScrollView refreshControl={refresh} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}>
     <Row><Wick size={60} lit /><View style={{ flex: 1 }}><T w="x" s={24}>Profil</T><T raw c={c.muted}>{`${lesDone} / ${lesAll}`}</T></View></Row>
     {S.a.focus ? null : <Row>{stat(String(streakNow(S)), 'Svit', c.coral)}{stat(String(S.xp), 'Total XP', c.gold)}{stat(String(S.perfect), 'Felfria lektioner', c.up)}</Row>}
     {S.a.focus ? null : <Card style={{ gap: 10 }}><T w="x">Den här veckan</T>

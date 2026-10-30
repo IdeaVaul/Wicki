@@ -9,10 +9,12 @@ import { Header, Screen } from '../../src/ui/Header';
 import { KidSheet, KidTopic, PatCard, kidConcept, kidPattern } from '../../src/ui/sheets';
 import { CandleChart } from '../../src/ui/Chart';
 import { patCandles } from '../../src/engine/charts';
+import { useRefresh } from '../../src/ui/Refresh';
 
 export default function Library() {
   const { c, t, font, S, rtl } = useStore();
   const [tab, setTab] = useState<'mon' | 'beg'>('mon');
+  const refresh = useRefresh();
   const [f, setF] = useState('all'); const [q, setQ] = useState('');
   const [pat, setPat] = useState<string | null>(null); const [kid, setKid] = useState<KidTopic | null>(null);
   const ids = Object.keys(PAT).filter(id => { const g = PAT[id].sig; return f === 'all' || (f === 'up' && /Up/.test(g) && /rev/.test(g)) || (f === 'down' && /Down/.test(g) && /rev/.test(g)) || (f === 'neu' && g === 'neutral') || (f === 'cont' && /cont/.test(g)); });
@@ -26,10 +28,10 @@ export default function Library() {
         style={{ borderWidth: 2, borderColor: c.line, borderRadius: 14, padding: 12, backgroundColor: c.surface, color: c.ink, fontFamily: font('m'), fontSize: 16 * (S.big ? 1.18 : 1), textAlign: rtl ? 'right' : 'left' }} />}
   </View>;
   return <Screen><Header />
-    {tab === 'mon' ? <FlatList key="mon" data={ids} numColumns={2} keyExtractor={x => x} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130 }} columnWrapperStyle={{ gap: 10 }}
+    {tab === 'mon' ? <FlatList refreshControl={refresh} key="mon" data={ids} numColumns={2} keyExtractor={x => x} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130 }} columnWrapperStyle={{ gap: 10 }}
       renderItem={({ item }) => { const P = PAT[item]; const r = patCandles(item, 11); return <Pressable testID={'pat-' + item} onPress={() => setPat(item)} style={{ flex: 1, marginBottom: 10, borderWidth: 2, borderBottomWidth: 4, borderColor: c.line, borderRadius: 14, backgroundColor: c.surface, padding: 8, gap: 4 }}>
         <CandleChart cs={r.cs.slice(-P.k - 3)} h={90} pad={8} hl={[3, 3 + P.k - 1]} /><T w="b" s={14}>{P.n}</T></Pressable>; }} />
-      : <FlatList key="beg" data={terms} keyExtractor={x => x[0]} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
+      : <FlatList refreshControl={refresh} key="beg" data={terms} keyExtractor={x => x[0]} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
         ListEmptyComponent={<T c={c.muted}>Inget begrepp matchar.</T>}
         renderItem={({ item: [a, b] }) => <Card style={{ gap: 4 }}><T w="x" s={16}>{a}</T><T s={14.5}>{b}</T>
           <Pressable onPress={() => { const pid = Object.keys(PAT).find(id => PAT[id].n === a); setKid(pid ? kidPattern(pid) : kidConcept(a, b, CFIG[a])); }}><T w="x" s={12} c={c.pri} upper>✦ Steg för steg</T></Pressable></Card>} />}

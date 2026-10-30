@@ -15,11 +15,13 @@ import { Screen } from '../../src/ui/Header';
 import { BgCandles, CandlesIcon, Ring } from '../../src/ui/Deco';
 import { VIDEOS } from '../../src/data/videos';
 import { vidMins } from '../../src/engine/video';
+import { useRefresh } from '../../src/ui/Refresh';
 
 /** Hem: svit, XP och hjärtan, Wicki som hälsar, dagens mål och nästa lektion. */
 export default function Home() {
   const { S, c, update, buzz, rtl, t } = useStore(); const ins = useSafeAreaInsets();
   const [tip, setTip] = useState<string | null>(null);
+  const refresh = useRefresh(() => setTip(pick(WTIPS[S.lang] || WTIPS.sv)), ins.top);
   if (!S.onb) return <Redirect href="/onboarding" />;
   const copy = JSON.parse(JSON.stringify(S));
   const dx = Math.min(Q(copy).xp, GOAL(S)), g = GOAL(S), pct = Math.round(dx / g * 100);
@@ -35,7 +37,7 @@ export default function Home() {
     <View style={{ flex: 1, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 99, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB }}>
       <Ionicons name={icon} size={18} color={col} /><T raw w="x" s={15}>{val}</T><T w="b" s={14}>{lab}</T></View>;
   return <Screen>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 14 }}>
+    <ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 14 }}>
       {S.a.focus ? null : <Row gap={8}>
         {chip('flame', litToday(S) ? '#FF9A1F' : c.lockInk, String(streakNow(S)), 'dagar')}
         {chip('star', c.gold, String(S.xp), 'XP')}

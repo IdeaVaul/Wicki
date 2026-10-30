@@ -9,10 +9,12 @@ import { Btn, T } from '../../src/ui/kit';
 import { Screen } from '../../src/ui/Header';
 import { Wick } from '../../src/ui/Wick';
 import { BgCandles } from '../../src/ui/Deco';
+import { useRefresh } from '../../src/ui/Refresh';
 
 /** Öva: dagens repetition överst, sedan övningarna som rader (som i skisserna). */
 export default function Practice() {
   const { S, c, t, rtl } = useStore(); const ins = useSafeAreaInsets();
+  const refresh = useRefresh(undefined, ins.top);
   const due = dueKeys(S).length; const nm = Object.values(S.miss as Record<string, number>).filter(v => v > 0).length;
   const open = (mode: string) => router.push({ pathname: '/lesson', params: { mode } });
   const row = (id: string, icon: keyof typeof Ionicons.glyphMap, col: string, title: string, sub: string, onPress: () => void) =>
@@ -22,7 +24,7 @@ export default function Practice() {
       <View style={{ flex: 1, gap: 3 }}><T w="b" s={17.5}>{title}</T><T raw s={14.5} c={c.muted}>{sub}</T></View>
       <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={22} color={c.muted} />
     </Pressable>;
-  return <Screen><ScrollView contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 10 }}>
+  return <Screen><ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 10 }}>
     <T w="x" s={34}>Öva</T>
     <T c={c.muted} style={{ marginBottom: 8 }}>Bygg dina kunskaper, steg för steg.</T>
     <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', borderRadius: 26, overflow: 'hidden', backgroundColor: c.heroA, borderWidth: 1, borderColor: c.bubB, padding: 20, paddingVertical: 22 }}>

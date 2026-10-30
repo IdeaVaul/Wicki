@@ -13,18 +13,20 @@ function Inner() {
   if (!ready) return null;
   return <>
     <StatusBar style={dark ? 'light' : 'dark'} />
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+    {/* Svep från vänsterkanten (var som helst på skärmen) = tillbaka, som i Instagram och TikTok. */}
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, gestureEnabled: true, fullScreenGestureEnabled: true }}>
       <Stack.Screen name="(tabs)" />
       {/* Helskärmsvyer visas som vanliga skärmar som glider upp, inte som iOS-modaler. En ersatt (replace) iOS-modal kunde lämna
           ett osynligt lager kvar ovanpå flikarna så att Kurs, Öva och Profil slutade svara på tryck. */}
+      {/* Lektionen har egen Avsluta-knapp: ett råkat svep ska inte kasta bort halva lektionen. */}
       <Stack.Screen name="lesson" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
       <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="videos" />
       <Stack.Screen name="sim" />
       <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
       <Stack.Screen name="legal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="video" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
-      <Stack.Screen name="myths" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+      <Stack.Screen name="video" />
+      <Stack.Screen name="myths" />
       <Stack.Screen name="pause" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
   </>;

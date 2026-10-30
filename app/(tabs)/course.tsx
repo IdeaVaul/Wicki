@@ -13,6 +13,7 @@ import type { PathNode } from '../../src/types';
 import { Btn, Card, Pill, Row, Sheet, SheetTop, T } from '../../src/ui/kit';
 import { Screen } from '../../src/ui/Header';
 import { PatCard, KidSheet, KidTopic, kidConcept } from '../../src/ui/sheets';
+import { useRefresh } from '../../src/ui/Refresh';
 
 const KPX = [0.30, 0.38, 0.46, 0.38, 0.30, 0.22, 0.16, 0.22];
 const NKIND: Record<string, string> = { les: 'Lektion', gen: 'Mönsterövning', mix: 'Repetition', chest: 'Skattkista', test: 'Enhetstest' };
@@ -27,6 +28,7 @@ function RiskNote() { const { c, S } = useStore(); const minor = S.age === 'u18'
 /** Kurs: alla enheter som kort, den öppna enheten som en slingrande stig (som i skisserna). */
 export default function Course() {
   const { S, c, update, buzz, t, rtl } = useStore(); const ins = useSafeAreaInsets();
+  const refresh = useRefresh(undefined, ins.top);
   const [open, setOpen] = useState<number | null>(null);
   const [sec, setSec] = useState<number | null>(null);
   const [pickSec, setPickSec] = useState(false);
@@ -93,7 +95,7 @@ export default function Course() {
     </Card>); });
 
   return <Screen>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 8 }}>
+    <ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 8 }}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 4 }}>
         <T raw w="x" s={34}>{KURS[S.lang] || 'Kurs'}</T>
         <Pressable testID="sec" onPress={() => setPickSec(true)} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, maxWidth: '58%' }}>

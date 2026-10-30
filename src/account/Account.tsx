@@ -7,7 +7,9 @@ import { supabase } from './supabase';
 
 type Acc = { email: string | null; name: string | null; ready: boolean; syncing: boolean; lastSync: number | null;
   signIn: (email: string, pw: string) => Promise<string | null>; signUp: (email: string, pw: string, name: string) => Promise<{ err: string | null; confirm: boolean }>;
-  reset: (email: string) => Promise<string | null>; signOut: () => Promise<void>; deleteAll: () => Promise<string | null> };
+  reset: (email: string) => Promise<string | null>; signOut: () => Promise<void>; deleteAll: () => Promise<string | null>;
+  /** Dra ner för att uppdatera: hämtar kontots framsteg igen (eller laddar upp telefonens om de är nyare). */
+  refresh: () => Promise<void> };
 const Ctx = createContext<Acc>(null as any);
 export const useAccount = () => useContext(Ctx);
 
@@ -45,16 +47,17 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     setSyncing(false); if (!error) setLastSync(Date.now());
   };
   // Vid inloggning: hämta sparade framsteg. Har kontot mer XP än telefonen tar vi kontots, annars laddas telefonens upp.
+  const sync = async (id: string) => {
+    setSyncing(true);
+    const { data, error } = await supabase.from('wicki_progress').select('state, xp').eq('user_id', id).maybeSingle();
+    setSyncing(false); if (error) return;
+    const local = Sref.current;
+    if (data && (data.xp || 0) >= (local.xp || 0)) { update(s => { const r = normalize(data.state); Object.assign(s, r); KEEP.forEach(k => { (s as any)[k] = (local as any)[k]; }); s.onb = true; }); setLastSync(Date.now()); }
+    else push(id, local);
+  };
   useEffect(() => {
     if (!uid || !sReady || pulled.current === uid) return; pulled.current = uid;
-    (async () => {
-      setSyncing(true);
-      const { data, error } = await supabase.from('wicki_progress').select('state, xp').eq('user_id', uid).maybeSingle();
-      setSyncing(false); if (error) return;
-      const local = Sref.current;
-      if (data && (data.xp || 0) >= (local.xp || 0)) { update(s => { const r = normalize(data.state); Object.assign(s, r); KEEP.forEach(k => { (s as any)[k] = (local as any)[k]; }); s.onb = true; }); setLastSync(Date.now()); }
-      else push(uid, local);
-    })();
+    sync(uid);
   }, [uid, sReady]); // eslint-disable-line react-hooks/exhaustive-deps
   // Spara löpande (högst var tredje sekund) medan man är inloggad.
   useEffect(() => {
@@ -72,6 +75,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   };
   const value: Acc = {
     email, name, ready, syncing, lastSync, deleteAll,
+    refresh: async () => { if (uid) { try { await sync(uid); } catch { } } },
     signIn: async (e, pw) => { const { error } = await supabase.auth.signInWithPassword({ email: e.trim(), password: pw }); return authErr(error?.message); },
     signUp: async (e, pw, nm) => { if (pw.length < 8) return { err: 'Lösenordet måste vara minst 8 tecken.', confirm: false };
       const { data, error } = await supabase.auth.signUp({ email: e.trim(), password: pw, options: { data: { name: nm.trim(), app: 'wicki' } } });
