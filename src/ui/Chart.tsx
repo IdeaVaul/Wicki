@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { G, Line, Path, Polyline, Rect, Text as SText } from 'react-native-svg';
 import { arrList, type ArrowStep } from '../data/arrows';
 import { useStore } from '../store';
@@ -7,7 +7,9 @@ import type { ChartSpec, Fig } from '../types';
 import { rsiOf } from '../engine/charts';
 import { T } from './kit';
 
-type P = ChartSpec & { sel?: number | null; onSpot?: (i: number) => void; w?: number; arrows?: ArrowStep };
+/** extra = egna linjer per ljus (t.ex. MA 50, Bollingerband). onTap = tryck i grafen ger ljusindex och pris (för att rita). */
+export type Extra = { pts: (number | null)[]; c: 'up' | 'down' | 'pri' | 'gold' | 'violet' | 'muted'; dash?: boolean; wdt?: number };
+type P = ChartSpec & { sel?: number | null; onSpot?: (i: number) => void; w?: number; arrows?: ArrowStep; extra?: Extra[]; onTap?: (i: number, price: number) => void };
 /** Pil som pekar på (x, y). dir = åt vilket håll pilen pekar. */
 function Arr({ x, y, dir, color, bg, sc = 1 }: { x: number; y: number; dir: 'down' | 'up' | 'left' | 'right'; color: string; bg: string; sc?: number }) {
   const rot = { down: 0, up: 180, left: 90, right: -90 }[dir];
@@ -15,10 +17,10 @@ function Arr({ x, y, dir, color, bg, sc = 1 }: { x: number; y: number; dir: 'dow
 }
 function swings(cs: ChartSpec['cs'], hi: boolean) { const out: number[] = []; for (let i = 2; i < cs.length - 2; i++) { const v = hi ? cs[i].h : cs[i].l; let ok = true; for (let k = i - 2; k <= i + 2; k++) { if (k === i) continue; const w = hi ? cs[k].h : cs[k].l; if (hi ? w > v : w < v) { ok = false; break; } } if (ok && (!out.length || i - out[out.length - 1] > 2)) out.push(i); } return out; }
 /** Candlestick-graf. I färgblindläge blir uppåtljus ihåliga. */
-export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0, vol = false, hl = null, pad = 8, h = 170, sel = null, onSpot, rsi, w = 320, arrows }: P) {
+export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0, vol = false, hl = null, pad = 8, h = 170, sel = null, onSpot, rsi, w = 320, arrows, extra = [], onTap }: P) {
   const { c, S, t, font } = useStore();
   const ph = vol ? h * 0.76 : h;
-  const sy = segs.flatMap(g => [g.a[1], g.b[1]]);
+  const sy = [...segs.flatMap(g => [g.a[1], g.b[1]]), ...extra.flatMap(e => e.pts.filter((v): v is number => v != null))];
   const lo = Math.min(...cs.map(x => x.l), ...lines.map(l => l.y), ...sy), hi = Math.max(...cs.map(x => x.h), ...lines.map(l => l.y), ...sy), span = (hi - lo) || 1;
   const Y = (v: number) => pad + (hi - v) / span * (ph - 2 * pad), cw = (w - 2 * pad) / cs.length, bw = Math.min(28, Math.max(2, cw * 0.62));
   const cb = !!S.a.cb;
@@ -42,8 +44,12 @@ export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0,
     else if (a.ma && ma) { const i = cs.length - 1; const av = cs.slice(i - ma + 1, i + 1).reduce((s, x) => s + x.c, 0) / ma; A(pad + i * cw + cw / 2, Y(av) - 3, 'down'); }
   });
   const top = AR.length ? 24 : 0;
+  const [box, setBox] = React.useState({ w: 1, h: 1 });
+  const tap = (e: { nativeEvent: { locationX: number; locationY: number } }) => { if (!onTap) return;
+    const x = e.nativeEvent.locationX / box.w * w, y = e.nativeEvent.locationY / box.h * (h + 2 * top) - top;
+    const i = Math.max(0, Math.min(cs.length - 1, Math.floor((x - pad) / cw))); const price = hi - (y - pad) / (ph - 2 * pad) * span; onTap(i, price); };
   const main = (
-    <View style={{ width: '100%', aspectRatio: w / (h + 2 * top) }}>
+    <Pressable disabled={!onTap} onPress={tap} onLayout={e => setBox({ w: e.nativeEvent.layout.width || 1, h: e.nativeEvent.layout.height || 1 })} style={{ width: '100%', aspectRatio: w / (h + 2 * top) }}>
       <Svg width="100%" height="100%" viewBox={`0 ${-top} ${w} ${h + 2 * top}`} accessibilityLabel={t('Kursgraf')}>
         {hl ? <Rect x={pad + hl[0] * cw - 2} y={2} width={(hl[1] - hl[0] + 1) * cw + 4} height={ph - 4} rx={8} fill={c.hl} stroke={c.pri} strokeWidth={1.5} strokeDasharray="4 3" /> : null}
         {asLine ? <Polyline points={cs.map((x, i) => `${(pad + i * cw + cw / 2).toFixed(1)},${Y(x.c).toFixed(1)}`).join(' ')} fill="none" stroke={c.pri} strokeWidth={2.6} strokeLinejoin="round" /> : cs.map((x, i) => {
@@ -55,6 +61,7 @@ export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0,
           </React.Fragment>;
         })}
         {sel != null ? <Rect x={pad + sel * cw} y={2} width={cw} height={ph - 4} rx={4} fill={c.hl} stroke={c.pri} strokeWidth={2.5} /> : null}
+        {extra.map((e, k) => { const pts = e.pts.map((v, i) => v == null ? null : `${(pad + i * cw + cw / 2).toFixed(1)},${Y(v).toFixed(1)}`).filter(Boolean).join(' '); return pts ? <Polyline key={'e' + k} points={pts} fill="none" stroke={c[e.c]} strokeWidth={e.wdt || 2} strokeDasharray={e.dash ? '5 4' : undefined} strokeLinejoin="round" /> : null; })}
         {ma ? <Polyline points={maPts.join(' ')} fill="none" stroke={c.gold} strokeWidth={2.6} strokeLinejoin="round" /> : null}
         {segs.map((g, i) => { const X = (t: number) => pad + t * (w - 2 * pad); return <Line key={'g' + i} x1={X(g.a[0])} x2={X(g.b[0])} y1={Y(g.a[1])} y2={Y(g.b[1])} stroke={c[g.c]} strokeWidth={2.2} strokeLinecap="round" />; })}
         {lines.map((l, i) => <React.Fragment key={'l' + i}>
@@ -65,7 +72,7 @@ export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0,
         {marks}
         {onSpot ? cs.map((_, i) => <Rect key={'s' + i} x={pad + i * cw} y={0} width={cw} height={ph} fill="transparent" onPress={() => onSpot(i)} />) : null}
       </Svg>
-    </View>
+    </Pressable>
   );
   if (!rsi) return main;
   const r = rsiOf(cs); const rh = 70, RY = (v: number) => 8 + (100 - v) / 100 * (rh - 16); const last = r[r.length - 1] || 50;

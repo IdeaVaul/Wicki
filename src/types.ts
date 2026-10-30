@@ -41,6 +41,8 @@ export type State = {
   plus?: { plan: 'm' | 'y'; since: number; cancel?: number; test?: boolean; off?: number } | null;
   /** Samtycke till anonym statistik (PostHog) och kraschrapporter (Sentry). undefined = inte frågat än. */
   stats?: boolean; did?: string;
+  /** Diagramverktyg i simulatorn (indikatorer, tidsram, ritade nivåer och trendlinjer). */
+  simTools?: import('./engine/simtools').SimTools;
 };
 
 /** Videoskolan */

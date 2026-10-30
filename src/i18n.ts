@@ -5,6 +5,7 @@ import { SKIN_DICT } from './data/skin-dict';
 import { YDICT } from './data/youth';
 import { VDICT } from './data/videos';
 import { SIM_DICT } from './data/sim-dict';
+import { TOOLS_DICT } from './data/tools-dict';
 import { LV_DICT } from './data/lv-dict';
 import { AUTH_DICT } from './data/auth-dict';
 import { AGE_DICT } from './data/age-dict';
@@ -15,6 +16,7 @@ for (const l of Object.keys(LEGAL_DICT)) for (const k of Object.keys(LEGAL_DICT[
 for (const l of Object.keys(AGE_DICT)) for (const k of Object.keys(AGE_DICT[l])) DICT[l][k] = AGE_DICT[l][k];
 for (const l of Object.keys(AUTH_DICT)) for (const k of Object.keys(AUTH_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = AUTH_DICT[l][k];
 for (const l of Object.keys(LV_DICT)) for (const k of Object.keys(LV_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = LV_DICT[l][k];
+for (const l of Object.keys(TOOLS_DICT)) for (const k of Object.keys(TOOLS_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = TOOLS_DICT[l][k];
 for (const l of Object.keys(SIM_DICT)) for (const k of Object.keys(SIM_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = SIM_DICT[l][k];
 for (const l of Object.keys(YDICT)) Object.assign(DICT[l], YDICT[l]);
 for (const l of Object.keys(VDICT)) Object.assign(DICT[l], VDICT[l]);

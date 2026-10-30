@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../src/store';
 import { Btn, Card, Row, T } from '../src/ui/kit';
-import { CandleChart } from '../src/ui/Chart';
+import { CandleChart, type Extra } from '../src/ui/Chart';
+import { TOOLS0, bands, fearAt, fearColor, fearLabel, maLine, windowOf, type SimTools } from '../src/engine/simtools';
 import { Wick } from '../src/ui/Wick';
 import type { ChartLine, SimState } from '../src/types';
 import { kr } from '../src/engine/util';
@@ -18,7 +19,7 @@ import { track } from '../src/analytics';
 export default function Sim() {
   const { S, c, t, rtl, update, buzz } = useStore(); const ins = useSafeAreaInsets();
   const [side, setSide] = useState<0 | 1 | -1>(0); const [play, setPlay] = useState(false); const [msg, setMsg] = useState('');
-  const mt = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mt = useRef<ReturnType<typeof setTimeout> | null>(null); const tlA = useRef<[number, number] | null>(null);
   const s: SimState = S.sim && S.sim.v === 2 ? S.sim : (null as any);
   useEffect(() => { if (!s) update(x => { simGet(x); }); }, [!!s]);
   const say = (m: string) => { setMsg(m); if (mt.current) clearTimeout(mt.current); mt.current = setTimeout(() => setMsg(''), 3200); };
@@ -35,6 +36,23 @@ export default function Sim() {
   const qd = M.step < 1 ? 3 : 0;
   const lines: ChartLine[] = p ? [{ y: p.entry, c: 'pri', t: `${t(p.side > 0 ? 'Köp' : 'Blankning')} ${simF(p.entry, M.dec)}` }, { y: p.stop, c: 'down', t: `${t('Stopp')} ${simF(p.stop, M.dec)}` }, ...(p.tp ? [{ y: p.tp, c: 'up' as const, t: `${t('Mål')} ${simF(p.tp, M.dec)}` }] : [])] : [];
   const st = simStats(s), rec = S.simRec || { best: 0, chal: 0, tries: 0 }, ur = simUnreal(s);
+  // Diagramverktyg: tidsram, indikatorer och ritningar (sparas med absoluta ljusindex så att de följer med när grafen rullar).
+  const TL = { ...TOOLS0, ...(S.simTools || {}) };
+  const setTools = (f: (x: SimTools) => void) => update(x => { const o = { ...TOOLS0, ...(x.simTools || {}) }; f(o); x.simTools = o; });
+  const W = windowOf(cs, s.i, TL.tf || 1); const n0 = W.vis.length;
+  const big = windowOf(cs, s.i, TL.tf || 1, 44 + 60).vis; const cut = <X,>(a: X[]) => a.slice(a.length - n0);
+  const extra: Extra[] = [];
+  if (TL.ma20) extra.push({ pts: cut(maLine(big, 20)), c: 'gold', wdt: 2.4 });
+  if (TL.ma50) extra.push({ pts: cut(maLine(big, 50)), c: 'violet', wdt: 2.2 });
+  if (TL.bb) { const b = bands(big); extra.push({ pts: cut(b.up), c: 'muted', dash: true, wdt: 1.6 }, { pts: cut(b.lo), c: 'muted', dash: true, wdt: 1.6 }); }
+  const xOf = (abs: number) => ((abs - W.start) / W.tf + 0.5) / n0; // absolut ljusindex -> andel av bredden
+  const tlSegs = (TL.tl || []).map(([i1, p1, i2, p2]) => ({ a: [xOf(i1), p1] as [number, number], b: [xOf(i2), p2] as [number, number], c: 'violet' as const })).filter(g => g.a[0] > -0.5 && g.b[0] < 1.5);
+  const onTap = (i: number, price: number) => { const abs = W.start + i * W.tf + (W.tf - 1) / 2; buzz('tap');
+    if (TL.mode === 'lv') { setTools(x => { x.lv = [...(x.lv || []).slice(-5), price]; x.mode = ''; }); return; }
+    if (!tlA.current) { tlA.current = [abs, price]; setTools(() => { }); return; }
+    const [a1, b1] = tlA.current; tlA.current = null; setTools(x => { x.tl = [...(x.tl || []).slice(-3), [a1, b1, abs, price]]; x.mode = ''; }); };
+  const chip = (id: string, on: boolean, label: string, f: () => void) => <Pressable key={id} testID={'tool-' + id} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { buzz('tap'); f(); }}
+    style={{ paddingHorizontal: 11, paddingVertical: 7, borderRadius: 99, borderWidth: 1, borderColor: on ? c.pri : c.glassB, backgroundColor: on ? c.priSoft : c.glass }}><T raw w="b" s={12.5} c={on ? c.pri : c.ink}>{label}</T></Pressable>;
   const seg = <V extends string | number>(opts: [V, string][], cur: V, on: (v: V) => void, id: string) =>
     <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: c.glass, borderColor: c.glassB, borderWidth: 1, borderRadius: 14, padding: 3, gap: 3 }}>
       {opts.map(([v, l]) => <Pressable key={String(v)} testID={id + '-' + v} accessibilityRole="button" accessibilityState={{ selected: v === cur }} onPress={() => { buzz('tap'); on(v); }}
@@ -58,7 +76,21 @@ export default function Sim() {
         <Row><View style={{ width: 120 }}><T s={12} c={c.muted}>Max förlust −10 %</T></View>{bar((s.start - eq) / (s.start * 0.1) * 100, c.down)}</Row>
       </Card> : null}
       <Row gap={8}>{box('Konto', `${kr(Math.round(eq))} kr`)}{box('Resultat', `${pl >= 0 ? '+' : ''}${kr(Math.round(pl))}`, pl >= 0 ? c.up : c.down)}{box(M.sym, simF(price, M.dec))}</Row>
-      <Card style={{ padding: 8 }}><CandleChart cs={vis} lines={lines} ma={20} vol h={200} /></Card>
+      <SimFear cs={cs} i={s.i} />
+      <Card style={{ padding: 8, gap: 8 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+          {chip('tf1', TL.tf === 1, '1×', () => setTools(x => { x.tf = 1; }))}{chip('tf5', TL.tf === 5, '5×', () => setTools(x => { x.tf = 5; }))}
+          <View style={{ width: 1, backgroundColor: c.glassB, marginHorizontal: 2 }} />
+          {chip('ma20', !!TL.ma20, 'MA 20', () => setTools(x => { x.ma20 = !x.ma20; }))}{chip('ma50', !!TL.ma50, 'MA 50', () => setTools(x => { x.ma50 = !x.ma50; }))}
+          {chip('bb', !!TL.bb, 'Bollinger', () => setTools(x => { x.bb = !x.bb; }))}{chip('vol', !!TL.vol, t('Volym'), () => setTools(x => { x.vol = !x.vol; }))}{chip('rsi', !!TL.rsi, 'RSI', () => setTools(x => { x.rsi = !x.rsi; }))}
+          <View style={{ width: 1, backgroundColor: c.glassB, marginHorizontal: 2 }} />
+          {chip('lv', TL.mode === 'lv', '— ' + t('Nivå'), () => { setTools(x => { x.mode = x.mode === 'lv' ? '' : 'lv'; }); tlA.current = null; })}
+          {chip('tl', TL.mode === 'tl', '╱ ' + t('Trendlinje'), () => { setTools(x => { x.mode = x.mode === 'tl' ? '' : 'tl'; }); tlA.current = null; })}
+          {(TL.lv?.length || TL.tl?.length) ? chip('clr', false, '✕ ' + t('Rensa'), () => { setTools(x => { x.lv = []; x.tl = []; x.mode = ''; }); tlA.current = null; }) : null}
+        </ScrollView>
+        {TL.mode ? <T s={12.5} c={c.pri} w="b">{TL.mode === 'lv' ? 'Tryck i grafen där nivån ska gå.' : tlA.current ? 'Tryck där linjen ska sluta.' : 'Tryck där linjen ska börja.'}</T> : null}
+        <CandleChart cs={W.vis} lines={[...lines, ...(TL.lv || []).map(y => ({ y, c: 'violet' as const }))]} segs={tlSegs} extra={extra} ma={0} vol={!!TL.vol} rsi={!!TL.rsi} h={200} onTap={TL.mode ? onTap : undefined} />
+      </Card>
       {msg ? <Card style={{ padding: 10 }}><T raw w="b" s={14} center>{msg}</T></Card> : null}
       {s.res ? <Card style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'center', backgroundColor: s.res === 'pass' ? c.upSoft : c.glass }}>
         <Wick size={80} mood={s.res === 'pass' ? 'cheer' : 'sad'} />
@@ -101,4 +133,18 @@ export default function Sim() {
       <T s={13} c={c.muted} center>Stoppen sätts efter hur mycket priset brukar röra sig (ATR). R betyder hur många gånger din risk du vann eller förlorade. Hävstången följer EU:s gränser för privatpersoner. Priset är påhittat.</T>
     </ScrollView>
   </View>;
+}
+
+/** Rädslomätaren: fungerar som VIX för den påhittade marknaden. Stiger när svängningarna ökar och priset faller. */
+function SimFear({ cs, i }: { cs: import('../src/types').Candle[]; i: number }) {
+  const { c, S, rtl } = useStore(); const v = fearAt(cs, i), prev = fearAt(cs, Math.max(0, i - 1)); const ch = prev ? (v / prev - 1) * 100 : 0; const col = c[fearColor(v)];
+  return <Card style={{ padding: 12, gap: 6 }}>
+    <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
+      <View style={{ flex: 1 }}><T w="b" s={14}>Rädslomätare</T><T s={12} c={c.muted}>Som VIX: mäter hur mycket marknaden svänger och oroar sig.</T></View>
+      <View style={{ alignItems: rtl ? 'flex-start' : 'flex-end' }}><T raw w="x" s={22} c={col}>{S.lang === 'sv' || S.lang === 'fr' ? v.toFixed(2).replace('.', ',') : v.toFixed(2)}</T>
+        <T raw w="b" s={12} c={ch > 0 ? c.down : c.up}>{`${ch >= 0 ? '▲ +' : '▼ '}${S.lang === 'sv' || S.lang === 'fr' ? ch.toFixed(2).replace('.', ',') : ch.toFixed(2)} %`}</T></View>
+    </View>
+    <View style={{ height: 8, borderRadius: 99, backgroundColor: c.track, overflow: 'hidden', flexDirection: rtl ? 'row-reverse' : 'row' }}><View style={{ width: `${Math.min(100, v / 60 * 100)}%`, backgroundColor: col }} /></View>
+    <T w="b" s={12.5} c={col}>{fearLabel(v)}</T>
+  </Card>;
 }
