@@ -21,7 +21,9 @@ function TabBar({ state, navigation }: { state: { index: number; routes: { name:
     { name: 'practice', label: 'Öva', on: 'stats-chart', off: 'stats-chart-outline' },
     { name: 'profile', label: 'Profil', on: 'person', off: 'person-outline' },
   ];
-  const curName = state.routes[state.index]?.name === 'library' ? 'practice' : state.routes[state.index]?.name;
+  // Flikbytet får aldrig krascha: navigation saknas i vissa byggen, då används expo-routers router.
+  const go = (name: string) => { try { if (navigation?.navigate) return navigation.navigate(name); } catch { } router.navigate((name === 'index' ? '/' : '/' + name) as any); };
+  const curName = state?.routes?.[state.index]?.name === 'library' ? 'practice' : state?.routes?.[state.index]?.name;
   return <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 14, paddingBottom: ins.bottom + 8 }}>
     <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: c.tabbg, borderRadius: 30, borderWidth: 1, borderColor: c.glassB, padding: 6,
       shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 12 }}>
@@ -33,8 +35,8 @@ function TabBar({ state, navigation }: { state: { index: number; routes: { name:
             <Ionicons name="trending-up" size={S.a.tap ? 30 : 27} color={c.on} /></View>}
         </Pressable> : null;
         return <React.Fragment key={it.name}>{mid}
-        return <Pressable testID={'tab-' + it.name} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={it.label}
-          onPress={() => navigation.navigate(it.name)}
+        <Pressable testID={'tab-' + it.name} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={it.label}
+          onPress={() => go(it.name)}
           style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: S.a.tap ? 12 : 8, borderRadius: 24, backgroundColor: on ? c.priSoft : 'transparent' }}>
           <Ionicons name={on ? it.on : it.off} size={S.a.tap ? 28 : 24} color={on ? c.pri : c.muted} />
           <T raw={it.raw} w="b" s={12} c={on ? c.pri : c.muted} center>{it.label}</T>
