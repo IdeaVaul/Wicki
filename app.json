@@ -39,7 +39,8 @@
           }
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/no-push"
     ],
     "owner": "theboss4",
     "extra": {
