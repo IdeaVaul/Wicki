@@ -40,15 +40,15 @@ def binance(sym, start):
 SETS = [
     ('omx', 'OMXS30', 'stooq', '^omxs', '2023-01-01', '2026-12-31'),
     ('spx', 'S&P 500', 'stooq', '^spx', '2023-01-01', '2026-12-31'),
-    ('spx2020', 'S&P 500 (coronakraschen)', 'stooq', '^spx', '2019-11-01', '2020-09-30'),
+    ('spx2020', 'S&P 500 (2020)', 'stooq', '^spx', '2019-11-01', '2020-09-30'),
     ('aapl', 'Apple', 'stooq', 'aapl.us', '2023-06-01', '2026-12-31'),
     ('tsla', 'Tesla', 'stooq', 'tsla.us', '2023-06-01', '2026-12-31'),
     ('nvda', 'Nvidia', 'stooq', 'nvda.us', '2023-06-01', '2026-12-31'),
-    ('gold', 'Guld', 'stooq', 'xauusd', '2023-06-01', '2026-12-31'),
+    ('gold', 'Gold (XAU/USD)', 'stooq', 'xauusd', '2023-06-01', '2026-12-31'),
     ('eurusd', 'EUR/USD', 'stooq', 'eurusd', '2023-06-01', '2026-12-31'),
     ('btc', 'Bitcoin', 'binance', 'BTCUSDT', '2023-06-01', '2026-12-31'),
     ('eth', 'Ethereum', 'binance', 'ETHUSDT', '2023-06-01', '2026-12-31'),
-    ('btc2021', 'Bitcoin (toppen 2021)', 'binance', 'BTCUSDT', '2021-01-01', '2021-12-31'),
+    ('btc2021', 'Bitcoin (2021)', 'binance', 'BTCUSDT', '2021-01-01', '2021-12-31'),
 ]
 out = []; errs = []
 for sid, name, src, sym, a, b in SETS:
