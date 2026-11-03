@@ -18,7 +18,7 @@
       "package": "com.bahradine.wick",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2E6BF6"
+        "backgroundColor": "#062018"
       }
     },
     "web": {
@@ -32,10 +32,10 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200,
-          "backgroundColor": "#FFFFFF",
+          "imageWidth": 240,
+          "backgroundColor": "#06150F",
           "dark": {
-            "backgroundColor": "#0E1422"
+            "backgroundColor": "#06150F"
           }
         }
       ],
