@@ -11,6 +11,8 @@ import { AUTH_DICT } from './data/auth-dict';
 import { AGE_DICT } from './data/age-dict';
 import { LEGAL_DICT } from './data/legal-dict';
 import { GROW_DICT } from './data/grow-dict';
+import { PR_DICT, PR_RULES } from './data/practical-dict';
+import { ONLINE_DICT } from './data/online-dict';
 for (const l of Object.keys(CDICT)) for (const k of Object.keys(CDICT[l])) if (DICT[l][k] == null) DICT[l][k] = CDICT[l][k];
 for (const l of Object.keys(SKIN_DICT)) for (const k of Object.keys(SKIN_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = SKIN_DICT[l][k];
 for (const l of Object.keys(LEGAL_DICT)) for (const k of Object.keys(LEGAL_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = LEGAL_DICT[l][k];
@@ -19,6 +21,9 @@ for (const l of Object.keys(AUTH_DICT)) for (const k of Object.keys(AUTH_DICT[l]
 for (const l of Object.keys(LV_DICT)) for (const k of Object.keys(LV_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = LV_DICT[l][k];
 for (const l of Object.keys(TOOLS_DICT)) for (const k of Object.keys(TOOLS_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = TOOLS_DICT[l][k];
 for (const l of Object.keys(SIM_DICT)) for (const k of Object.keys(SIM_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = SIM_DICT[l][k];
+for (const l of Object.keys(PR_DICT)) for (const k of Object.keys(PR_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = PR_DICT[l][k];
+RULES.unshift(...(PR_RULES as any));
+for (const l of Object.keys(ONLINE_DICT)) for (const k of Object.keys(ONLINE_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = ONLINE_DICT[l][k];
 for (const l of Object.keys(GROW_DICT)) for (const k of Object.keys(GROW_DICT[l])) if (DICT[l][k] == null) DICT[l][k] = GROW_DICT[l][k];
 for (const l of Object.keys(YDICT)) Object.assign(DICT[l], YDICT[l]);
 for (const l of Object.keys(VDICT)) Object.assign(DICT[l], VDICT[l]);

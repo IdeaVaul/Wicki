@@ -1122,7 +1122,7 @@ export const CONTENT: Record<string, Lesson> = {
    },
    {
     "t": "ISK",
-    "d": "I Sverige finns investeringssparkonto (ISK). Där betalar du en schablonskatt varje år i stället för skatt på varje vinst. Kontrollera aktuella regler hos Skatteverket."
+    "d": "I Sverige finns investeringssparkonto (ISK). Där betalar du en schablonskatt varje år i stället för skatt på varje vinst. Från 2026 är de första 300 000 kronorna skattefria (ISK och kapitalförsäkring tillsammans). Kontrollera aktuella regler hos Skatteverket."
    },
    {
     "t": "Varningstecken",

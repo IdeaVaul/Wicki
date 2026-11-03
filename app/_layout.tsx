@@ -11,6 +11,7 @@ import { AccountProvider } from '../src/account/Account';
 import { hookErrors, newId, reportError, screen, setTelemetry } from '../src/analytics';
 import { plusOn } from '../src/engine/plus';
 import { useReminders } from '../src/ui/grow';
+import { useLeagueSync } from '../src/ui/online';
 import { onOpen, reschedule } from '../src/notify';
 import { track } from '../src/analytics';
 
@@ -25,7 +26,7 @@ function Telemetry() {
 
 /** Påminnelser: håller schemat aktuellt och öppnar rätt skärm när man trycker på en påminnelse. */
 function Reminders() {
-  const { S, update } = useStore(); useReminders();
+  const { S, update } = useStore(); useReminders(); useLeagueSync();
   const Sref = React.useRef(S); Sref.current = S;
   useEffect(() => onOpen((url, kind, id) => {
     if (id && Sref.current.grow?.lastN === id) return;
@@ -69,6 +70,8 @@ function Inner() {
       <Stack.Screen name="plus" options={{ presentation: 'modal' }} />
       <Stack.Screen name="video" />
       <Stack.Screen name="myths" />
+      <Stack.Screen name="league" />
+      <Stack.Screen name="ask" options={{ animation: 'slide_from_bottom' }} />
       <Stack.Screen name="pause" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
   </>;

@@ -53,6 +53,9 @@ export default function Profile() {
     {out ? <Sheet visible onClose={() => setOut(false)}><View style={{ alignItems: 'center', gap: 8 }}><Wick size={72} mood="sad" /><T w="x" s={22} center>Logga ut?</T>
       <T c={c.muted} center>Dina framsteg är sparade i kontot. Logga in igen när du vill fortsätta.</T></View>
       <Btn testID="logout-yes" kind="bad" label="Logga ut" onPress={async () => { setOut(false); await acc.signOut(); }} /><Btn kind="ghost" label="Avbryt" onPress={() => setOut(false)} /></Sheet> : null}
+    <Card testID="league" onPress={() => router.push('/league')} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <Ionicons name="trophy" size={26} color={c.gold} /><View style={{ flex: 1 }}><T w="b">Veckoligan och vänner</T><T s={13} c={c.muted}>Tävla med din XP och lägg till vänner med vänkod.</T></View>
+      <Ionicons name="chevron-forward" size={20} color={c.muted} /></Card>
     <PushCard />
     <Card testID="age" style={{ gap: 8 }}><T w="b">Ålder</T><T s={13} c={c.muted}>Används för att anpassa innehållet. Lektioner om högriskprodukter kräver att du är 18.</T>
       <Row gap={8} style={{ flexWrap: 'wrap' }}>{([['u16', 'Under 16 år'], ['u18', '16–17 år'], ['y', '18–25 år'], ['o', 'Över 25 år'], ['', 'Vill inte säga']] as const).map(([k, l]) => <Pill key={k || 'none'} label={l} on={(S.age || '') === k} onPress={() => update(s => { s.age = k; })} />)}</Row></Card>

@@ -19,6 +19,7 @@ import { vidMins } from '../../src/engine/video';
 import { useRefresh } from '../../src/ui/Refresh';
 import { Bar, MScroll } from '../../src/ui/motion';
 import { Checklist, HomeNudges } from '../../src/ui/grow';
+import { MarketCard } from '../../src/ui/online';
 
 /** Hem: svit, XP och hjärtan, Wicki som hälsar, dagens mål och nästa lektion. */
 export default function Home() {
@@ -61,6 +62,11 @@ export default function Home() {
         <Ring pct={pct} />
       </Card>}
       <Checklist onPush={() => setPushOpen(true)} />
+      <Row gap={10}>
+        <Card testID="go-league" onPress={() => router.push('/league')} style={{ flex: 1, gap: 6 }}><Ionicons name="trophy" size={24} color={c.gold} /><T w="b" s={15}>Veckoligan</T><T s={12.5} c={c.muted}>Tävla mot andra och dina vänner</T></Card>
+        <Card testID="go-ask" onPress={() => router.push('/ask')} style={{ flex: 1, gap: 6 }}><Ionicons name="chatbubbles" size={24} color={c.pri} /><T w="b" s={15}>Fråga Wicki</T><T s={12.5} c={c.muted}>AI svarar på dina frågor om trading</T></Card>
+      </Row>
+      <MarketCard />
       {cur ? <Card onPress={go} testID="next" style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ width: 58, height: 58, borderRadius: 16, backgroundColor: c.priSoft, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}><CandlesIcon /></View>
         <View style={{ flex: 1, gap: 3 }}><T w="b" s={17}>{`Enhet ${cur.u + 1}`}</T><T w="b" s={16}>{nodeName(cur)}</T>

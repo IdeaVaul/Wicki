@@ -15,7 +15,7 @@ export type Fig = { kind: 'ohlc' } | ({ kind: 'chart' } & ChartSpec);
 export type Opt = { k: string; l: string };
 export type Ex = {
   id: number;
-  t: 'intro' | 'pintro' | 'mc' | 'match' | 'order' | 'spot' | 'lvid';
+  t: 'intro' | 'pintro' | 'mc' | 'match' | 'order' | 'spot' | 'lvid' | 'tap' | 'num';
   lv?: { l: string; title: string; sc: LvScene[] };
   q?: string; c?: Concept; pat?: string;
   opts?: Opt[]; ans?: string; fig?: Fig | null; why?: string;
@@ -24,6 +24,9 @@ export type Ex = {
   items?: string[]; bank?: number[];
   cs?: Candle[]; start?: number; end?: number;
   msg?: { from: string; text: string }; noHint?: boolean;
+  /** Praktiska övningar: tk = vad som ska tryckas ut (stöd, motstånd, stop-loss), lo–hi = godkänt prisintervall, mark = facit,
+   *  entry = köppris, unit = enhet för inskrivet svar, reveal = hela riktiga grafen som visas efter svaret, note = källa. */
+  tk?: 'sup' | 'res' | 'stop'; lo?: number; hi?: number; mark?: number; entry?: number; unit?: string; reveal?: Candle[]; note?: string;
 };
 export type A11y = Partial<Record<'lex' | 'space' | 'tint' | 'readQ' | 'focus' | 'short' | 'fewer' | 'breaks' | 'notime' | 'cb' | 'calm' | 'tap', boolean>>;
 export type Lang = 'sv' | 'en' | 'fr' | 'ar';

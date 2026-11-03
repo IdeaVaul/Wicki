@@ -1,0 +1,26 @@
+name: Riktiga marknadsdata
+on:
+  workflow_dispatch:
+  push:
+    branches: [data-refresh]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python scripts/realdata.py
+      - name: Testa Wickis kursfunktion
+        run: |
+          mkdir -p tmp
+          curl -s -m 40 "https://ubnspdiplzowhydgvefq.supabase.co/functions/v1/wicki-quotes?ids=omx,spx,btc,gold,eursek" -H "apikey: sb_publishable_YhU1AwaaDK-DjmjyHQ8B3A_VuO5vi1g" | head -c 3000 > tmp/quotes-test.json || true
+          curl -s -m 40 -X POST "https://ubnspdiplzowhydgvefq.supabase.co/functions/v1/wicki-ai" -H "apikey: sb_publishable_YhU1AwaaDK-DjmjyHQ8B3A_VuO5vi1g" -H "Content-Type: application/json" -d '{"mode":"ask","question":"hej"}' | head -c 500 > tmp/ai-test.json || true
+      - run: |
+          git config user.name "wicki-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f src/data/real.ts tmp
+          git commit -m "Uppdatera riktiga marknadsdata" || echo "inga ändringar"
+          git push origin HEAD:data-refresh-out --force

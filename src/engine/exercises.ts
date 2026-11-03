@@ -7,6 +7,7 @@ import { shuffle, pick, range, ri, kr } from './util';
 import { SCAMS } from '../data/youth';
 import { VIDEOS } from '../data/videos';
 import { lvScenes } from './lessonvideo';
+import { PRACTICAL as PR } from './practical';
 
 let EXID = 0;
 const X = (o: Omit<Ex, 'id'>): Ex => ({ ...o, id: ++EXID });
@@ -69,15 +70,21 @@ export function exPosSize() { const risk = pick([100, 200, 300, 500, 600]); cons
 export function exRR() { const e = ri(40, 200), r = pick([2, 3, 4, 5]), k = pick([1, 2, 3, 4]);
   return mc(`Köp ${e} kr, stop-loss ${e - r} kr, mål ${e + r * k} kr. Vilken risk/reward?`, '1:' + k, ['1:1', '1:2', '1:3', '1:4', k + ':1'], { why: `Risk ${r} kr, möjlig vinst ${r * k} kr, alltså 1:${k}.` }); }
 const GEN: Record<string, (() => Ex)[]> = {
-  candle: [exCandleColor, exCandleBody, exCandleWick], trend: [exTrend, exTrend, exSR], p1: pg(G1), p2: pg(G2), p3: pg(G3),
-  spot: [() => exSpot(pick(ALLPAT())), () => exSpot(pick(ALLPAT())), () => exStop(pick(ALLPAT())), () => exNext()],
-  ind: [exMA, exRSI], risk: [exRiskAmt, exPosSize, exRR],
+  candle: [exCandleColor, exCandleBody, exCandleWick], trend: [exTrend, exTrend, exSR, ...PR.tap.slice(0, 2), PR.real[0], PR.real[2]], p1: pg(G1), p2: pg(G2), p3: pg(G3),
+  spot: [() => exSpot(pick(ALLPAT())), () => exSpot(pick(ALLPAT())), () => exStop(pick(ALLPAT())), () => exNext(), PR.real[1], PR.tap[2]],
+  ind: [exMA, exRSI, PR.real[0]], risk: [exRiskAmt, exPosSize, exRR, ...PR.num, PR.tap[2]],
 };
 const ALLGEN: (() => Ex)[] = [exCandleColor, exCandleBody, exCandleWick, exTrend, exSR, ...pg(ALLPAT()).slice(0, 3), exMA, exRSI, exRiskAmt, exPosSize, exRR];
 type Item = [string, string | number];
 const lesItems = (lid: string): Item[] => CONTENT[lid].pat ? CONTENT[lid].pat!.map(id => ['@', id] as Item) : CONTENT[lid].q!.map((_, i) => [lid, i] as Item);
 const fromAny = ([l, i]: Item): Ex => l === '@' ? pick([exPatName, exPatBias, exSpot, exStop])(String(i)) : fromItem(l, +i);
 
+const PRACT: Record<string, (() => Ex)[]> = {
+  candle: [PR.real[0]], trend: [...PR.tap.slice(0, 2), PR.real[0], PR.real[2]], spot: [PR.real[1], PR.tap[2]], ind: [PR.real[0], PR.real[1]],
+  risk: [...PR.num, PR.tap[2]], p1: [PR.real[1]], p2: [PR.real[1]], p3: [PR.real[1]],
+};
+/** Övningsläget Riktiga grafer: blandning av riktiga marknadsgrafer, utritning och räkning. */
+export const buildReal = () => shuffle([PR.real[0], PR.real[0], PR.real[1], PR.real[1], PR.real[2], PR.real[2], PR.tap[2], ...PR.num.slice(0, 2), PR.tap[0]]).map(f => f());
 export function buildLesson(n: PathNode): Ex[] {
   const u = UNITS[n.u]; let q: Ex[] = [];
   if (n.k === 'les' && CONTENT[n.l!].pat) {
@@ -93,6 +100,8 @@ export function buildLesson(n: PathNode): Ex[] {
     const it = shuffle(u.les.flatMap(lesItems)).slice(0, n.k === 'mix' ? 7 : 9).map(fromAny);
     if (u.gen) it.push(...range(3).map(() => pick(GEN[u.gen!])())); q = shuffle(it);
   }
+  // Varje lektion avslutas med praktiska uppgifter: tryck ut nivåer, räkna själv eller läs en riktig graf.
+  if (n.k === 'les' && CONTENT[n.l!]) { const pool = PRACT[u.gen || ''] || []; if (pool.length) q.push(...shuffle(pool.slice()).slice(0, 2).map(f => f())); }
   if (n.k === 'les' && CONTENT[n.l!]) q.unshift(X({ t: 'lvid', lv: { l: n.l!, title: CONTENT[n.l!].t, sc: lvScenes(n.l!) } }));
   return q;
 }

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../src/store';
 import type { Ex, PathNode } from '../src/types';
 import { NODE, UNITS } from '../src/engine/course';
-import { adaptQ, buildBlitz, buildScam, buildVidQuiz, buildHunt, buildLesson, buildNext, buildPatPractice, buildPlacement, buildPractice, buildReview } from '../src/engine/exercises';
+import { adaptQ, buildReal, buildBlitz, buildScam, buildVidQuiz, buildHunt, buildLesson, buildNext, buildPatPractice, buildPlacement, buildPractice, buildReview } from '../src/engine/exercises';
 import { Q, addXP, dueKeys, heartsNow, loseHeart, nextHeartMin, srsMark, touchStreak } from '../src/engine/state';
 import { pick, shuffle } from '../src/engine/util';
 import { figSpec } from '../src/engine/charts';
@@ -18,10 +18,13 @@ import { speak, hush } from '../src/speech';
 import { LessonVideo } from '../src/ui/LessonVideo';
 import { breakDue } from '../src/session';
 import { track } from '../src/analytics';
-import { Bar, CountUp, Enter, Stagger } from '../src/ui/motion';
+import { Bar, CountUp, Enter, Press, Stagger } from '../src/ui/motion';
+import { Ionicons } from '@expo/vector-icons';
+import { AiSheet } from '../src/ui/online';
+import type { AiReq } from '../src/online';
 
-type Mode = 'node' | 'practice' | 'review' | 'hunt' | 'next' | 'blitz' | 'placement' | 'pat' | 'scam' | 'vquiz';
-type LS = { lvEnd?: boolean;
+type Mode = 'node' | 'practice' | 'review' | 'hunt' | 'next' | 'blitz' | 'placement' | 'pat' | 'scam' | 'vquiz' | 'real';
+type LS = { lvEnd?: boolean; tp?: number | null; num?: string;
   q: Ex[]; i: number; st: null | 'ok' | 'no'; sel: string | number | null; arr: number[];
   m: { sa: number | null; sb: number | null; done: number[]; err: [number, number] | null; bad: boolean };
   mist: number; ok: number; start: number; retried: number[]; phase: 'ex' | 'end' | 'nohearts';
@@ -44,14 +47,14 @@ export default function Lesson() {
   const node: PathNode | undefined = mode === 'node' && p.id ? NODE(p.id) : undefined;
   const practice = mode !== 'node'; const timed = mode === 'blitz'; const placement = mode === 'placement';
   const [L, setL] = useState<LS | null>(null);
-  const [kid, setKid] = useState<KidTopic | null>(null);
+  const [kid, setKid] = useState<KidTopic | null>(null); const [ai, setAi] = useState<AiReq | null>(null);
   const [, tick] = useState(0);
   const Lref = useRef<LS | null>(null); Lref.current = L;
   const mut = (fn: (l: LS) => void) => setL(prev => { if (!prev) return prev; const n = { ...prev, m: { ...prev.m } }; fn(n); return n; });
 
   useEffect(() => {
     let q: Ex[] = mode === 'node' && node ? buildLesson(node) : mode === 'practice' ? buildPractice(S) : mode === 'review' ? buildReview(dueKeys(S))
-      : mode === 'hunt' ? buildHunt() : mode === 'next' ? buildNext() : mode === 'blitz' ? buildBlitz() : mode === 'placement' ? buildPlacement() : mode === 'scam' ? buildScam() : mode === 'vquiz' ? buildVidQuiz(p.id || 'v1') : buildPatPractice(p.id || 'hammer');
+      : mode === 'hunt' ? buildHunt() : mode === 'next' ? buildNext() : mode === 'blitz' ? buildBlitz() : mode === 'placement' ? buildPlacement() : mode === 'scam' ? buildScam() : mode === 'vquiz' ? buildVidQuiz(p.id || 'v1') : mode === 'real' ? buildReal() : buildPatPractice(p.id || 'hammer');
     q = adaptQ(q, S.a, { custom: mode !== 'node' && mode !== 'practice', timed });
     const s2 = { ...S }; const h = heartsNow(s2);
     setL({ q, i: 0, st: null, sel: null, arr: [], m: { sa: null, sb: null, done: [], err: null, bad: false }, mist: 0, ok: 0, start: Date.now(), retried: [], phase: !practice && h === 0 ? 'nohearts' : 'ex', msg: '', end: timed ? Date.now() + 60000 : undefined, place: {} });
@@ -104,7 +107,7 @@ export default function Lesson() {
     const prev = Lref.current; if (!prev || prev.phase !== 'ex') return;
     const l: LS = { ...prev, q: prev.q.slice(), retried: prev.retried.slice() }; const e = l.q[l.i];
     if (l.st === 'no' && !timed && !placement && !l.retried.includes(e.id)) { l.retried.push(e.id); const cp: Ex = { ...e }; if (cp.opts) cp.opts = shuffle(cp.opts.slice()); if (cp.bank) cp.bank = shuffle(cp.bank.slice()); if (cp.L) { cp.L = shuffle(cp.L.slice()); cp.R = shuffle(cp.R!.slice()); } l.q.push(cp); }
-    l.i++; l.st = null; l.sel = null; l.arr = []; l.m = { sa: null, sb: null, done: [], err: null, bad: false };
+    l.i++; l.st = null; l.sel = null; l.tp = null; l.num = ''; l.arr = []; l.m = { sa: null, sb: null, done: [], err: null, bad: false };
     const next = l.i >= l.q.length ? finishL(l) : l; Lref.current = next; setL(next);
   }
   const matchDone = !!L && !!ex && ex.t === 'match' && L.m.done.length === ex.pairs!.length && !L.st;
@@ -139,9 +142,9 @@ export default function Lesson() {
   const e = ex!;
   const prog = timed ? Math.min(1, 1 - ((L.end || 0) - Date.now()) / 60000) : Math.min(1, (L.i + (L.st === 'ok' ? 1 : L.st ? 0.5 : 0)) / L.q.length);
   const intro = e.t === 'intro' || e.t === 'pintro' || e.t === 'lvid';
-  const can = intro || ((e.t === 'mc' || e.t === 'spot') && L.sel != null) || (e.t === 'order' && L.arr.length === e.items!.length);
+  const can = intro || ((e.t === 'mc' || e.t === 'spot') && L.sel != null) || (e.t === 'order' && L.arr.length === e.items!.length) || (e.t === 'tap' && L.tp != null) || (e.t === 'num' && !!L.num);
   const primary = () => { if (L.st) { advance(); return; } if (intro) { if (e.t === 'lvid') hush(); advance(); return; }
-    if (e.t === 'mc') grade(L.sel === e.ans); else if (e.t === 'spot') grade(+L.sel! >= e.start! && +L.sel! <= e.end!); else if (e.t === 'order') grade(L.arr.every((v, k) => v === k)); };
+    if (e.t === 'mc') grade(L.sel === e.ans); else if (e.t === 'spot') grade(+L.sel! >= e.start! && +L.sel! <= e.end!); else if (e.t === 'order') grade(L.arr.every((v, k) => v === k)); else if (e.t === 'tap') grade(L.tp! >= e.lo! && L.tp! <= e.hi!); else if (e.t === 'num') grade(Number(L.num) === Number(e.ans)); };
   const showSay = !!(S.a.readQ || S.a.lex || S.a.space || S.tts || S.big);
 
   const body = () => {
@@ -150,7 +153,7 @@ export default function Lesson() {
       <Card style={{ gap: 10 }}><T w="x" s={22}>{e.c!.t}</T>{e.c!.fig ? <FigView fig={figSpec(e.c!.fig)} /> : null}<T s={17}>{e.c!.d}</T></Card>
       <KidButton onPress={() => setKid(kidConcept(e.c!.t, e.c!.d, e.c!.fig))} /></View>;
     if (e.t === 'pintro') return <View style={{ gap: 12 }}><T w="x" s={13} c={c.violet} upper>✦ Nytt mönster</T><PatCard id={e.pat!} /><KidButton onPress={() => setKid(kidPattern(e.pat!))} /></View>;
-    if (e.t === 'mc') return <View style={{ gap: 12 }}><T w="x" s={26}>{e.q}</T>{e.fig ? <FigView fig={e.fig} /> : null}
+    if (e.t === 'mc') return <View style={{ gap: 12 }}><T w="x" s={26}>{e.q}</T>{e.fig ? <FigView fig={L.st && e.reveal && e.fig.kind === 'chart' ? { ...e.fig, cs: e.reveal, hl: [e.fig.cs.length, e.reveal.length - 1] } : e.fig} /> : null}
       {e.msg ? <Card style={{ gap: 8 }}><T w="b" s={13} c={c.muted}>{e.msg.from}</T><View style={{ alignSelf: rtl ? 'flex-end' : 'flex-start', maxWidth: '92%', backgroundColor: c.sunk, borderWidth: 1, borderColor: c.glassB, borderRadius: 20, borderBottomLeftRadius: rtl ? 20 : 6, borderBottomRightRadius: rtl ? 6 : 20, padding: 12 }}><T s={16.5}>{e.msg.text}</T></View></Card> : null}
       <View style={{ gap: 10 }}>{e.opts!.map((o, k) => { const st = L.st ? (o.k === e.ans ? 'ok' : o.k === L.sel ? 'no' : '') : o.k === L.sel ? 'sel' : '';
         const bc = st === 'ok' ? c.up : st === 'no' ? c.down : st === 'sel' ? c.pri : c.line, bg = st === 'ok' ? c.upSoft : st === 'no' ? c.downSoft : st === 'sel' ? c.priSoft : c.surface;
@@ -171,11 +174,29 @@ export default function Lesson() {
         return <Pressable key={side + k} disabled={done || !!L.st} onPress={() => tapM(side, k)} style={{ borderWidth: 2, borderBottomWidth: 4, borderRadius: 12, padding: 10, minHeight: S.a.tap ? 70 : 58, justifyContent: 'center', opacity: done ? 0.45 : 1,
           borderColor: err ? c.down : sel ? c.pri : done ? c.up : c.line, backgroundColor: err ? c.downSoft : sel ? c.priSoft : c.surface }}><T w="b" s={14} center>{side === 'l' ? e.pairs![k].a : e.pairs![k].b}</T></Pressable>; };
       return <View style={{ gap: 12 }}><T w="x" s={22}>Para ihop</T><Row style={{ alignItems: 'flex-start' }}><View style={{ flex: 1, gap: 8 }}>{e.L!.map(k => cell('l', k))}</View><View style={{ flex: 1, gap: 8 }}>{e.R!.map(k => cell('r', k))}</View></Row></View>; }
+    if (e.t === 'tap') { const tp = L.tp; const col = e.tk === 'stop' ? 'down' : e.tk === 'res' ? 'gold' : 'up';
+      const lines: { y: number; c: any; t?: string }[] = [];
+      if (e.entry != null) lines.push({ y: e.entry, c: 'pri', t: t('Köp') });
+      if (tp != null) lines.push({ y: tp, c: L.st === 'no' ? 'down' : col, t: t('Din linje') });
+      if (L.st) lines.push({ y: e.mark!, c: 'up', t: t('Facit') });
+      const shown = L.st && e.reveal ? e.reveal : e.cs!;
+      return <View style={{ gap: 10 }}><T w="x" s={24}>{e.q}</T><T c={c.muted}>{tp == null ? 'Tryck i grafen för att dra en linje.' : 'Tryck igen för att flytta linjen.'}</T>
+        <Card style={{ padding: 10, gap: 4 }}><CandleChart cs={shown} h={220} pad={10} lines={lines} onTap={L.st ? undefined : ((_i: number, price: number) => { buzz('tap'); mut(l => { l.tp = price; }); })} />
+          {e.note ? <T raw s={12} c={c.muted}>{e.note}</T> : null}</Card></View>; }
+    if (e.t === 'num') { const v = L.num || ''; const key = (k: string) => { if (L.st) return; buzz('tap'); mut(l => { const cur = l.num || ''; l.num = k === '<' ? cur.slice(0, -1) : (cur + k).replace(/^0+(?=\d)/, '').slice(0, 7); }); };
+      return <View style={{ gap: 12 }}><T w="x" s={22}>{e.q}</T>
+        <Card style={{ alignItems: 'center', paddingVertical: 18, borderColor: L.st ? (L.st === 'ok' ? c.up : c.down) : c.pri }}>
+          <T raw w="x" s={40} c={v ? c.ink : c.muted}>{(v || '0') + ' ' + t(e.unit || '')}</T></Card>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '<'].map((k, i) => k === '' ? <View key={i} style={{ width: '30%' }} /> :
+            <Press key={i} testID={'key-' + k} disabled={!!L.st} onPress={() => key(k)} style={{ width: '30%', height: 56, borderRadius: 16, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
+              {k === '<' ? <Ionicons name="backspace-outline" size={24} color={c.ink} /> : <T raw w="x" s={24}>{k}</T>}</Press>)}
+        </View></View>; }
     return null;
   };
 
   const ok = L.st === 'ok';
-  const ansTxt = !L.st || ok ? '' : e.t === 'mc' ? t(e.opts!.find(o => o.k === e.ans)!.l) : e.t === 'order' ? e.items!.map((s, k) => `${k + 1}. ${t(s)}`).join('\n') : e.t === 'spot' ? t('Mönstret är markerat i grafen.') : '';
+  const ansTxt = !L.st || ok ? '' : e.t === 'mc' ? t(e.opts!.find(o => o.k === e.ans)!.l) : e.t === 'order' ? e.items!.map((s, k) => `${k + 1}. ${t(s)}`).join('\n') : e.t === 'spot' ? t('Mönstret är markerat i grafen.') : e.t === 'num' ? `${e.ans} ${t(e.unit || '')}` : e.t === 'tap' ? t('Den gröna linjen visar rätt nivå.') : '';
   const combo = S.q?.combo || 0;
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -205,11 +226,14 @@ export default function Lesson() {
             {e.why && !timed ? <T s={14} c={ok ? c.upD : c.downD}>{e.why}</T> : null}
             {!timed && (e.why || !ok) ? <Pressable testID="kid-a" onPress={() => setKid({ key: 'a:' + e.id, title: 'Wicki förklarar', fb: [...(!ok && e.t === 'mc' ? [t('Rätt svar:') + ' ' + t(e.opts!.find(o => o.k === e.ans)!.l)] : []), ...(e.why ? [e.why] : [])] })}>
               <T w="x" s={12} c={ok ? c.upD : c.downD} upper>✦ Förklara steg för steg</T></Pressable> : null}
+            {!timed ? <Pressable testID="ai-explain" onPress={() => setAi({ mode: 'explain', q: t(e.q || (e.c ? e.c.t : '')), opts: (e.opts || []).map(o => t(o.l)), ans: e.t === 'mc' ? t(e.opts!.find(o => o.k === e.ans)?.l || '') : e.t === 'num' ? `${e.ans} ${t(e.unit || '')}` : e.t === 'tap' ? String(Math.round((e.mark || 0) * 100) / 100) : '', chosen: e.t === 'mc' && L.sel != null ? t(String(L.sel)) : e.t === 'num' ? L.num : e.t === 'tap' && L.tp != null ? String(Math.round(L.tp * 100) / 100) : undefined, why: e.why ? t(e.why) : undefined })}>
+              <T w="x" s={12} c={c.pri} upper>✦ Fråga Wicki AI</T></Pressable> : null}
           </View></Row></Enter> : null}
         {timed && L.st ? null : e.t === 'match' && !L.st ? <Btn label="Kontrollera" disabled /> :
           <Btn testID="primary" label={e.t === 'lvid' && !L.st ? (L.lvEnd ? 'Till frågorna' : 'Hoppa till frågorna') : L.st || intro ? 'Fortsätt' : 'Kontrollera'} kind={L.st ? (ok ? 'good' : 'bad') : 'pri'} disabled={!L.st && !can} onPress={primary} />}
       </View>
       <KidSheet topic={kid} onClose={() => setKid(null)} />
+      <AiSheet open={!!ai} req={ai} onClose={() => setAi(null)} />
       <Sheet visible={!!L.quit} onClose={() => mut(l => { l.quit = false; })}>
         <View style={{ alignItems: 'center', gap: 10 }}><Wick mood="sad" size={80} /><T w="x" s={22} center>Vill du verkligen sluta?</T><T center c={c.muted}>Du förlorar framstegen i den här lektionen.</T></View>
         <Btn label="Fortsätt lära" onPress={() => mut(l => { l.quit = false; })} />

@@ -40,6 +40,7 @@ export default function Practice() {
     </View>
     {row('videos', 'film', c.pri, 'Videoskolan', t('8 videor om varför priset rör sig, när man köper och säljer.'), () => router.push('/videos'))}
     {row('sim', 'stats-chart', c.up, 'Handelssimulator', t('Riskfri trading med låtsaspengar: aktier, forex, krypto och guld.'), () => router.push('/sim'))}
+    {row('real', 'globe', c.pri, 'Riktiga grafer', t('Läs riktiga marknadsgrafer, rita stöd och sätt stop-loss.'), () => open('real'))}
     {row('hunt', 'analytics', c.up, 'Mönsterjakt', t('Känn igen vanliga mönster.'), () => open('hunt'))}
     {row('next', 'trending-up', c.down, 'Vad hände sen?', t('Träna på att tolka utvecklingen.'), () => open('next'))}
     {S.a.notime ? null : row('blitz', 'stopwatch', c.gold, `${t('Snabbrunda')} · 60 ${t('sek')}`, t('Snabba frågor, stora framsteg.') + (S.best60 ? ` ${t('Rekord:')} ${S.best60}` : ''), () => open('blitz'))}

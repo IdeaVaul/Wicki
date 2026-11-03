@@ -5,7 +5,7 @@ import { DEFAULT, normalize } from '../engine/state';
 import type { State } from '../types';
 import { supabase } from './supabase';
 
-type Acc = { email: string | null; name: string | null; ready: boolean; syncing: boolean; lastSync: number | null;
+type Acc = { uid: string | null; email: string | null; name: string | null; ready: boolean; syncing: boolean; lastSync: number | null;
   signIn: (email: string, pw: string) => Promise<string | null>; signUp: (email: string, pw: string, name: string) => Promise<{ err: string | null; confirm: boolean }>;
   reset: (email: string) => Promise<string | null>; signOut: () => Promise<void>; deleteAll: () => Promise<string | null>;
   /** Dra ner för att uppdatera: hämtar kontots framsteg igen (eller laddar upp telefonens om de är nyare). */
@@ -74,7 +74,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     return null;
   };
   const value: Acc = {
-    email, name, ready, syncing, lastSync, deleteAll,
+    uid, email, name, ready, syncing, lastSync, deleteAll,
     refresh: async () => { if (uid) { try { await sync(uid); } catch { } } },
     signIn: async (e, pw) => { const { error } = await supabase.auth.signInWithPassword({ email: e.trim(), password: pw }); return authErr(error?.message); },
     signUp: async (e, pw, nm) => { if (pw.length < 8) return { err: 'Lösenordet måste vara minst 8 tecken.', confirm: false };
