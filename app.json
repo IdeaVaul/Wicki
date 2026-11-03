@@ -13,7 +13,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": false
     },
     "android": {
       "package": "com.bahradine.wick",
@@ -49,7 +49,8 @@
     "extra": {
       "eas": {
         "projectId": "370b232e-94c1-4f54-9706-755165ac5c84"
-      }
+      },
+      "appleSignIn": false
     },
     "runtimeVersion": {
       "policy": "sdkVersion"

@@ -3,6 +3,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
 import { supabase } from './supabase';
 import { authErr } from './Account';
 
@@ -13,6 +14,8 @@ WebBrowser.maybeCompleteAuthSession?.();
 
 export async function appleAvailable() {
   if (Platform.OS !== 'ios') return false;
+  // Av tills appens profil hos Apple har rätten för Logga in med Apple (app.json → extra.appleSignIn).
+  if ((Constants.expoConfig?.extra as any)?.appleSignIn === false) return false;
   try { return await AppleAuthentication.isAvailableAsync(); } catch { return false; }
 }
 
