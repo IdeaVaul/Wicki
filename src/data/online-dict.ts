@@ -40,6 +40,10 @@ const ROWS: [string, string, string, string][] = [
   ['Veckoligan och vänner', 'Weekly league and friends', 'Ligue de la semaine et amis', 'الدوري الأسبوعي والأصدقاء'],
   ['Tävla med din XP och lägg till vänner med vänkod.', 'Compete with your XP and add friends with a friend code.', 'Affronte avec ton XP et ajoute des amis avec un code.', 'نافس بنقاطك وأضف أصدقاء برمز الصديق.'],
   ['✦ Fråga Wicki AI', '✦ Ask Wicki AI', '✦ Demande à Wicki AI', '✦ اسأل Wicki AI'],
+  ['Fortsätt med Google', 'Continue with Google', 'Continuer avec Google', 'المتابعة باستخدام Google'],
+  ['eller med e-post', 'or with email', 'ou avec un e-mail', 'أو بالبريد الإلكتروني'],
+  ['Inloggning med Apple är inte påslagen än.', 'Sign in with Apple isn\'t switched on yet.', 'La connexion avec Apple n\'est pas encore activée.', 'تسجيل الدخول عبر Apple غير مفعّل بعد.'],
+  ['Inloggning med Google är inte påslagen än.', 'Sign in with Google isn\'t switched on yet.', 'La connexion avec Google n\'est pas encore activée.', 'تسجيل الدخول عبر Google غير مفعّل بعد.'],
   ['Guld', 'Gold', 'Or', 'الذهب'], ['Olja (Brent)', 'Oil (Brent)', 'Pétrole (Brent)', 'النفط (برنت)'],
 ];
 export const ONLINE_DICT: Record<string, Record<string, string>> = { en: {}, fr: {}, ar: {} };

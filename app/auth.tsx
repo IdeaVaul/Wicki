@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,14 +9,26 @@ import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
 import { MScroll } from '../src/ui/motion';
 import { track } from '../src/analytics';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import Svg, { Path } from 'react-native-svg';
+import { appleAvailable, signInApple, signInGoogle } from '../src/account/social';
+import { supabase } from '../src/account/supabase';
 
 type Mode = 'in' | 'up' | 'reset';
 /** Logga in, skapa konto eller återställ lösenord. Framstegen sparas i kontot och följer med till nya telefoner. */
 export default function Auth() {
-  const { c, t, rtl, font, sys, buzz } = useStore(); const acc = useAccount(); const ins = useSafeAreaInsets();
+  const { c, t, rtl, font, sys, buzz, dark } = useStore(); const acc = useAccount(); const ins = useSafeAreaInsets();
   const p = useLocalSearchParams<{ mode?: Mode; from?: string }>();
   const [mode, setMode] = useState<Mode>(p.mode === 'up' ? 'up' : 'in'); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [name, setName] = useState('');
   const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null); const [info, setInfo] = useState<string | null>(null);
+  const [hasApple, setHasApple] = useState(false); useEffect(() => { appleAvailable().then(setHasApple); }, []);
+  const social = async (kind: 'apple' | 'google') => {
+    if (busy) return; setBusy(true); setErr(null); setInfo(null);
+    const e = kind === 'apple' ? await signInApple() : await signInGoogle(); setBusy(false);
+    if (e) { setErr(e); buzz('no'); return; }
+    const { data } = await supabase.auth.getSession();
+    if (data.session) { buzz('done'); track('signin_social', { method: kind, from: p.from || 'auth' }); router.back(); }
+  };
   const valid = /\S+@\S+\.\S+/.test(email.trim()) && (mode === 'reset' || pw.length >= (mode === 'up' ? 8 : 1)) && (mode !== 'up' || name.trim().length > 0);
   const go = async () => {
     if (!valid || busy) return; setBusy(true); setErr(null); setInfo(null);
@@ -38,6 +50,16 @@ export default function Auth() {
       {mode !== 'reset' ? <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', backgroundColor: c.glass, borderColor: c.glassB, borderWidth: 1, borderRadius: 16, padding: 4, gap: 4 }}>
         {(['in', 'up'] as Mode[]).map(m => <Pressable key={m} testID={'mode-' + m} onPress={() => { setMode(m); setErr(null); setInfo(null); }} style={{ flex: 1, paddingVertical: 11, borderRadius: 12, backgroundColor: mode === m ? c.pri : 'transparent', alignItems: 'center' }}>
           <T w="b" c={mode === m ? c.on : c.ink}>{m === 'in' ? 'Logga in' : 'Skapa konto'}</T></Pressable>)}</View> : null}
+      {mode !== 'reset' ? <View style={{ gap: 10 }}>
+        {hasApple ? <AppleAuthentication.AppleAuthenticationButton testID="apple" buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+          buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={28}
+          style={{ height: 56, width: '100%' }} onPress={() => social('apple')} /> : null}
+        <Pressable testID="google" accessibilityRole="button" accessibilityLabel={t('Fortsätt med Google')} disabled={busy} onPress={() => social('google')}
+          style={({ pressed }) => ({ height: 56, borderRadius: 28, backgroundColor: '#fff', borderWidth: 1, borderColor: '#DADCE0', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
+          <Svg width={20} height={20} viewBox="0 0 48 48"><Path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z" /><Path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z" /><Path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z" /><Path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z" /></Svg>
+          <T w="b" s={16.5} c="#1F1F1F">Fortsätt med Google</T></Pressable>
+        <Row style={{ marginTop: 4 }}><View style={{ flex: 1, height: 1, backgroundColor: c.line }} /><T s={13} c={c.muted}>eller med e-post</T><View style={{ flex: 1, height: 1, backgroundColor: c.line }} /></Row>
+      </View> : null}
       {info ? <Card style={{ backgroundColor: c.upSoft, borderColor: c.bubB }}><T s={15}>{info}</T></Card> : null}
       {mode === 'up' ? <Row>{input(name, setName, 'Vad heter du?', { autoCapitalize: 'words', textContentType: 'givenName', autoComplete: 'name', returnKeyType: 'next' }, 'name')}</Row> : null}
       <Row>{input(email, setEmail, 'E-post', { keyboardType: 'email-address', autoCapitalize: 'none', autoCorrect: false, textContentType: 'emailAddress', autoComplete: 'email', returnKeyType: 'next' }, 'email')}</Row>
