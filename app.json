@@ -39,13 +39,7 @@
           }
         }
       ],
-      "expo-status-bar",
-      [
-        "expo-notifications",
-        {
-          "color": "#2FE39A"
-        }
-      ]
+      "expo-status-bar"
     ],
     "owner": "theboss4",
     "extra": {
