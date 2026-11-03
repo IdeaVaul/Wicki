@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../src/store';
 import { useAccount } from '../src/account/Account';
 import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
+import { MScroll } from '../src/ui/motion';
+import { track } from '../src/analytics';
 
 type Mode = 'in' | 'up' | 'reset';
 /** Logga in, skapa konto eller återställ lösenord. Framstegen sparas i kontot och följer med till nya telefoner. */
 export default function Auth() {
   const { c, t, rtl, font, sys, buzz } = useStore(); const acc = useAccount(); const ins = useSafeAreaInsets();
-  const [mode, setMode] = useState<Mode>('in'); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [name, setName] = useState('');
+  const p = useLocalSearchParams<{ mode?: Mode; from?: string }>();
+  const [mode, setMode] = useState<Mode>(p.mode === 'up' ? 'up' : 'in'); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [name, setName] = useState('');
   const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null); const [info, setInfo] = useState<string | null>(null);
   const valid = /\S+@\S+\.\S+/.test(email.trim()) && (mode === 'reset' || pw.length >= (mode === 'up' ? 8 : 1)) && (mode !== 'up' || name.trim().length > 0);
   const go = async () => {
     if (!valid || busy) return; setBusy(true); setErr(null); setInfo(null);
     if (mode === 'in') { const e = await acc.signIn(email, pw); setBusy(false); if (e) { setErr(e); buzz('no'); } else { buzz('done'); router.back(); } return; }
-    if (mode === 'up') { const r = await acc.signUp(email, pw, name); setBusy(false); if (r.err) { setErr(r.err); buzz('no'); } else if (r.confirm) { setInfo('Nästan klart! Vi har skickat ett mejl. Bekräfta din e-post och logga sedan in.'); setMode('in'); } else { buzz('done'); router.back(); } return; }
+    if (mode === 'up') { const r = await acc.signUp(email, pw, name); setBusy(false); if (r.err) { setErr(r.err); buzz('no'); } else if ((track('signup', { from: p.from || 'auth' }), r.confirm)) { setInfo('Nästan klart! Vi har skickat ett mejl. Bekräfta din e-post och logga sedan in.'); setMode('in'); } else { buzz('done'); router.back(); } return; }
     const e = await acc.reset(email); setBusy(false); if (e) setErr(e); else { setInfo('Om det finns ett konto med den e-posten har vi skickat en länk för att välja nytt lösenord.'); setMode('in'); }
   };
   const input = (v: string, set: (s: string) => void, ph: string, o: Record<string, unknown> = {}, id = '') =>
@@ -26,7 +29,7 @@ export default function Auth() {
       style={{ minHeight: 54, borderRadius: 16, borderWidth: 1, borderColor: c.glassB, backgroundColor: c.glass, paddingHorizontal: 16, color: c.ink, fontSize: 16.5, fontFamily: font('m'), fontWeight: sys ? '500' : undefined, textAlign: rtl ? 'right' : 'left', flex: 1 }} {...o} />;
   const title = mode === 'in' ? 'Logga in' : mode === 'up' ? 'Skapa konto' : 'Glömt lösenordet?';
   return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 30, gap: 14 }}>
+    <MScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 30, gap: 14 }}>
       <Row><Pressable testID="close" accessibilityLabel={t('Stäng')} onPress={() => router.back()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name="close" size={22} color={c.muted} /></Pressable></Row>
       <View style={{ alignItems: 'center', gap: 6, marginVertical: 6 }}><Wick size={92} mood="cheer" lit />
@@ -50,6 +53,6 @@ export default function Auth() {
       {mode === 'up' ? <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}><T s={12.5} c={c.muted}>Genom att skapa ett konto godkänner du</T>
         <Pressable onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })}><T s={12.5} w="b" c={c.pri}>användarvillkoren</T></Pressable><T s={12.5} c={c.muted}>och</T>
         <Pressable onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })}><T s={12.5} w="b" c={c.pri}>integritetspolicyn</T></Pressable></View> : null}
-    </ScrollView>
+    </MScroll>
   </KeyboardAvoidingView>;
 }

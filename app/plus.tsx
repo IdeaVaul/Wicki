@@ -9,6 +9,7 @@ import { Wick } from '../src/ui/Wick';
 import { LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
 import { PL } from '../src/data/plus-dict';
 import { track } from '../src/analytics';
+import { MScroll } from '../src/ui/motion';
 
 const LOC: Record<string, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
 
@@ -51,7 +52,7 @@ export default function Plus() {
   if (sub) {
     const P = S.plus!; const m = plusMonths(S); const nx = nextStep(S); const end = periodEnd(S, P.cancel || undefined);
     return <View style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
+      <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
         {close}
         <View style={{ alignItems: 'center', gap: 6 }}><Wick size={90} mood="cheer" lit /><T raw w="x" s={28} center>{L.mine}</T>
           <T raw c={c.muted} center>{P.plan === 'y' ? L.yearly(YEAR_KR) : L.monthly(priceNow(S))}</T></View>
@@ -72,13 +73,13 @@ export default function Plus() {
         </Card> : <Btn testID="cancel" kind="ghost" label={L.cancel} onPress={() => { setAsk(true); buzz('tap'); }} />}
         {P.test ? <Pressable testID="skip" onPress={() => { update(s => skipMonth(s)); buzz('tap'); }} style={{ alignSelf: 'center', padding: 8 }}><T raw s={13} w="b" c={c.muted}>{L.skip}</T></Pressable> : null}
         <T raw s={12} c={c.muted} center>{L.legal}</T>
-      </ScrollView>
+      </MScroll>
     </View>;
   }
 
   const restart = !!S.plus; // haft Plus förut: lojalitetspriset är borta
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
+    <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
       {close}
       <View style={{ alignItems: 'center', gap: 6 }}><Wick size={96} mood="cheer" lit /><T raw w="x" s={30} center>Wicki Plus</T><T raw c={c.muted} center>{L.sub}</T></View>
       {perks}
@@ -101,6 +102,6 @@ export default function Plus() {
         <Pressable onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })}><T raw s={12.5} w="b" c={c.pri}>{L.terms}</T></Pressable>
         <Pressable onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })}><T raw s={12.5} w="b" c={c.pri}>{L.privacy}</T></Pressable>
       </Row>
-    </ScrollView>
+    </MScroll>
   </View>;
 }

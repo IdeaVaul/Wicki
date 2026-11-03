@@ -1,5 +1,6 @@
-import React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextStyle, View, ViewStyle, StyleProp } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextStyle, View, ViewStyle, StyleProp } from 'react-native';
+import { Press, useCalm } from './motion';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 
@@ -31,26 +32,25 @@ export function Btn({ label, onPress, kind = 'pri', disabled, small, style, test
   const [bg, fg] = disabled ? [c.track, c.lockInk] : map[kind];
   const tap = S.a.tap; const glow = !disabled && kind !== 'ghost';
   return (
-    <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress}
-      style={({ pressed }) => [{ backgroundColor: bg, borderColor: c.glassB, borderWidth: kind === 'ghost' || disabled ? 1 : 0, borderRadius: 999,
+    <Press testID={testID} accessibilityLabel={label} disabled={disabled} onPress={onPress} scaleTo={0.955}
+      style={[{ backgroundColor: bg, borderColor: c.glassB, borderWidth: kind === 'ghost' || disabled ? 1 : 0, borderRadius: 999,
         minHeight: small ? 40 : tap ? 60 : 56, paddingHorizontal: small ? 14 : 22, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8,
-        shadowColor: bg, shadowOpacity: glow ? 0.5 : 0, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: glow ? 6 : 0,
-        transform: [{ scale: pressed ? 0.975 : 1 }] }, style]}>
+        shadowColor: bg, shadowOpacity: glow ? 0.5 : 0, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: glow ? 6 : 0 }, style]}>
       {left}<T w="b" s={small ? 14 : 17} c={fg} center>{label}</T>{right}
-    </Pressable>
+    </Press>
   );
 }
 export function Card({ children, style, onPress, testID }: { children: React.ReactNode; style?: StyleProp<ViewStyle>; onPress?: () => void; testID?: string }) {
   const { c } = useStore();
   const st = [{ backgroundColor: c.glass, borderColor: c.glassB, borderWidth: 1, borderRadius: 20, padding: 16 }, style];
-  if (onPress) return <Pressable testID={testID} accessibilityRole="button" onPress={onPress} style={({ pressed }) => [st, pressed && { transform: [{ scale: 0.985 }] }]}>{children}</Pressable>;
+  if (onPress) return <Press testID={testID} onPress={onPress} scaleTo={0.975} style={st}>{children}</Press>;
   return <View style={st}>{children}</View>;
 }
 export function Pill({ label, on, onPress, testID }: { label: string; on?: boolean; onPress: () => void; testID?: string }) {
   const { c, S } = useStore();
-  return <Pressable testID={testID} accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={onPress}
+  return <Press testID={testID} accessibilityState={{ selected: !!on }} onPress={onPress} scaleTo={0.93}
     style={{ paddingHorizontal: 14, paddingVertical: S.a.tap ? 12 : 8, borderRadius: 99, borderWidth: 1, borderColor: on ? c.pri : c.glassB, backgroundColor: on ? c.priSoft : c.glass }}>
-    <T w="b" s={14} c={on ? c.pri : c.ink}>{label}</T></Pressable>;
+    <T w="b" s={14} c={on ? c.pri : c.ink}>{label}</T></Press>;
 }
 export function SwitchRow({ label, sub, value, onChange, testID }: { label: string; sub?: string; value: boolean; onChange: (v: boolean) => void; testID?: string }) {
   const { c } = useStore();
@@ -60,16 +60,24 @@ export function SwitchRow({ label, sub, value, onChange, testID }: { label: stri
   </Row>;
 }
 export const Divider = () => { const { c } = useStore(); return <View style={{ height: 1, backgroundColor: c.line }} />; };
-/** Bottenark som modal. */
+/** Bottenark: bakgrunden tonar in och arket fjädrar upp. Stängs med ett mjukt glid ner. */
 export function Sheet({ visible, onClose, children }: { visible: boolean; onClose: () => void; children: React.ReactNode }) {
-  const { c } = useStore(); const ins = useSafeAreaInsets();
+  const { c } = useStore(); const ins = useSafeAreaInsets(); const calm = useCalm();
+  const [shown, setShown] = useState(visible); const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (visible) { setShown(true); if (calm) v.setValue(1); else Animated.spring(v, { toValue: 1, damping: 20, stiffness: 210, mass: 0.9, useNativeDriver: true }).start(); }
+    else if (shown) { if (calm) { v.setValue(0); setShown(false); } else Animated.timing(v, { toValue: 0, duration: 190, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => setShown(false)); }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!shown) return null;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2,6,5,0.6)' }]} onPress={onClose} accessibilityLabel="Stäng" />
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '90%', backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.glassB, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: ins.bottom + 12 }}>
+    <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2,6,5,0.6)', opacity: v }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Stäng" /></Animated.View>
+      <Animated.View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '90%', backgroundColor: c.surface, borderTopWidth: 1, borderColor: c.glassB, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: ins.bottom + 12,
+        transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [520, 0] }) }] }}>
         <View style={{ alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: c.line, marginTop: 8 }} />
         <ScrollView contentContainerStyle={{ padding: 18, gap: 12 }}>{children}</ScrollView>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

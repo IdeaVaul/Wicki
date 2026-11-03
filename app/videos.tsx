@@ -7,13 +7,15 @@ import { useStore } from '../src/store';
 import { VIDEOS } from '../src/data/videos';
 import { vidMins } from '../src/engine/video';
 import { Row, T } from '../src/ui/kit';
+import { MScroll } from '../src/ui/motion';
+import { Discover } from '../src/ui/grow';
 
 /** Videoskolan: lista över de animerade videolektionerna. */
 export default function Videos() {
   const { S, c, t, rtl } = useStore(); const ins = useSafeAreaInsets();
   const vs = S.vids || {}; const done = VIDEOS.filter(v => vs[v.id]).length; const tot = VIDEOS.reduce((a, v) => a + vidMins(v, t), 0);
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 40, gap: 10 }}>
+    <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 40, gap: 10 }}>
       <Row><Pressable testID="back" accessibilityLabel={t('Tillbaka')} onPress={() => router.back()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={c.muted} /></Pressable></Row>
       <T w="x" s={34}>Videoskolan</T>
@@ -27,6 +29,7 @@ export default function Videos() {
       </Pressable>)}
       <T s={13} c={c.muted} center style={{ marginTop: 8 }}>Rösten är datorgenererad och läser på ditt språk.</T>
       <T s={13} c={c.muted} center>Utbildning, inte investeringsråd.</T>
-    </ScrollView>
+    </MScroll>
+    <Discover id="videos" />
   </View>;
 }

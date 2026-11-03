@@ -16,6 +16,8 @@ import { Btn, Card, Pill, Row, Sheet, SheetTop, T } from '../../src/ui/kit';
 import { Screen } from '../../src/ui/Header';
 import { PatCard, KidSheet, KidTopic, kidConcept } from '../../src/ui/sheets';
 import { useRefresh } from '../../src/ui/Refresh';
+import { MScroll } from '../../src/ui/motion';
+import { Discover } from '../../src/ui/grow';
 
 const KPX = [0.30, 0.38, 0.46, 0.38, 0.30, 0.22, 0.16, 0.22];
 const NKIND: Record<string, string> = { les: 'Lektion', gen: 'Mönsterövning', mix: 'Repetition', chest: 'Skattkista', test: 'Enhetstest' };
@@ -98,7 +100,7 @@ export default function Course() {
     </Card>); });
 
   return <Screen>
-    <ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 8 }}>
+    <MScroll refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 8 }}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 4 }}>
         <T raw w="x" s={34}>{KURS[S.lang] || 'Kurs'}</T>
         <Pressable testID="sec" onPress={() => setPickSec(true)} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 99, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, maxWidth: '58%' }}>
@@ -106,7 +108,7 @@ export default function Course() {
       </Row>
       {rows}
       <T s={12.5} c={c.muted} center style={{ marginTop: 10 }}>Wicki lär ut kunskap, inte investeringsråd. All handel med värdepapper innebär risk och du kan förlora pengar.</T>
-    </ScrollView>
+    </MScroll>
     <Sheet visible={pickSec} onClose={() => setPickSec(false)}>
       <SheetTop title={t('Visa')} onClose={() => setPickSec(false)} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -120,5 +122,5 @@ export default function Course() {
       {UNITS[guide].les.flatMap(l => CONTENT[l].c || []).map(cc => <Card key={cc.t} onPress={() => setKid(kidConcept(cc.t, cc.d, cc.fig))} style={{ gap: 4 }}><T w="x" s={17}>{cc.t}</T><T>{cc.d}</T><T w="x" s={12} c={c.pri} upper>✦ Steg för steg</T></Card>)}
       <KidSheet topic={kid} onClose={() => setKid(null)} />
     </Sheet> : null}
-  </Screen>;
+  <Discover id="course" /></Screen>;
 }

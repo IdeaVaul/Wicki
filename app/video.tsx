@@ -13,6 +13,7 @@ import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
 import { VideoChart } from '../src/ui/VideoChart';
 import { femaleVoice } from '../src/voice';
+import { MScroll } from '../src/ui/motion';
 
 const RATES = [0.85, 1, 1.15, 1.3];
 
@@ -55,7 +56,7 @@ export default function Video() {
   const ov = sc.ov;
 
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 30, gap: 12 }}>
+    <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 30, gap: 12 }}>
       <Row><Pressable testID="close" accessibilityLabel={t('Tillbaka')} onPress={() => { tok.current++; clear(); router.back(); }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name="close" size={22} color={c.muted} /></Pressable>
         <T raw w="x" s={12.5} c={c.pri} upper>{`${t('Video')} ${k + 1}/${VIDEOS.length}`}</T></Row>
@@ -73,6 +74,6 @@ export default function Video() {
       </View>
       {ended ? <Btn testID="quiz" label="Testa dig själv · 3 frågor" onPress={() => { tok.current++; clear(); router.push({ pathname: '/lesson', params: { mode: 'vquiz', id: v.id } }); }} /> : null}
       {nx ? <Btn kind="ghost" label={`${t('Nästa video:')} ${t(nx.title)}`} onPress={() => { tok.current++; clear(); router.replace({ pathname: '/video', params: { id: nx.id } }); }} /> : null}
-    </ScrollView>
+    </MScroll>
   </View>;
 }

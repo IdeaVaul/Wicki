@@ -7,6 +7,7 @@ import { MYTHS } from '../src/data/youth';
 import { addXP } from '../src/engine/state';
 import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
+import { MScroll } from '../src/ui/motion';
 
 /** Snabbkort: en myt om pengar, tryck för att se sanningen. Ungefär 15 sekunder per kort. */
 export default function Myths() {
@@ -22,7 +23,7 @@ export default function Myths() {
     {done ? <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 }}>
       <Wick mood="cheer" size={110} anim="dance" /><T w="x" s={28} center>Klar!</T><T raw c={c.muted}>+5 XP</T>
       <Btn label="Fortsätt" onPress={() => router.back()} style={{ alignSelf: 'stretch' }} /></View>
-      : <ScrollView contentContainerStyle={{ padding: 18, gap: 12, paddingBottom: ins.bottom + 30 }}>
+      : <MScroll contentContainerStyle={{ padding: 18, gap: 12, paddingBottom: ins.bottom + 30 }}>
         <T w="x" s={28}>Snabbkort</T>
         <Card style={{ gap: 10, minHeight: 130, justifyContent: 'center' }}>
           <View style={{ alignSelf: rtl ? 'flex-end' : 'flex-start', backgroundColor: c.downSoft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 }}><T w="x" s={12} c={c.down} upper>Myt</T></View>
@@ -31,6 +32,6 @@ export default function Myths() {
           <View style={{ alignSelf: rtl ? 'flex-end' : 'flex-start', backgroundColor: c.priSoft, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 }}><T w="x" s={12} c={c.pri} upper>Sanningen</T></View>
           <T s={17}>{MYTHS[i][1]}</T></Card> : null}
         <Btn testID="next" label={flip ? 'Nästa kort' : 'Visa sanningen'} onPress={next} />
-      </ScrollView>}
+      </MScroll>}
   </View>;
 }

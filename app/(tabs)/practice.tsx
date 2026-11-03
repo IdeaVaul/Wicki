@@ -10,6 +10,8 @@ import { Screen } from '../../src/ui/Header';
 import { Wick } from '../../src/ui/Wick';
 import { BgCandles } from '../../src/ui/Deco';
 import { useRefresh } from '../../src/ui/Refresh';
+import { MScroll } from '../../src/ui/motion';
+import { Discover } from '../../src/ui/grow';
 
 /** Öva: dagens repetition överst, sedan övningarna som rader (som i skisserna). */
 export default function Practice() {
@@ -24,7 +26,7 @@ export default function Practice() {
       <View style={{ flex: 1, gap: 3 }}><T w="b" s={17.5}>{title}</T><T raw s={14.5} c={c.muted}>{sub}</T></View>
       <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={22} color={c.muted} />
     </Pressable>;
-  return <Screen><ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 10 }}>
+  return <Screen><MScroll refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 10 }}>
     <T w="x" s={34}>Öva</T>
     <T c={c.muted} style={{ marginBottom: 8 }}>Bygg dina kunskaper, steg för steg.</T>
     <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', borderRadius: 26, overflow: 'hidden', backgroundColor: c.heroA, borderWidth: 1, borderColor: c.bubB, padding: 20, paddingVertical: 22 }}>
@@ -48,5 +50,5 @@ export default function Practice() {
     {row('lib', 'library', c.gold, 'Bibliotek', t('Alla mönster och begrepp på ett ställe.'), () => router.push('/library'))}
     <T s={13} c={c.muted} center style={{ marginTop: 12 }}>Utbildning, inte investeringsråd.</T>
     <T s={13} c={c.muted} center>Alla grafer är påhittade.</T>
-  </ScrollView></Screen>;
+  </MScroll><Discover id="practice" /></Screen>;
 }

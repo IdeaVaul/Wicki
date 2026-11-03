@@ -15,6 +15,8 @@ import { useAccount } from '../../src/account/Account';
 import { useRefresh } from '../../src/ui/Refresh';
 import { plusOn, priceNow, YEAR_KR } from '../../src/engine/plus';
 import { PL, STATS } from '../../src/data/plus-dict';
+import { MScroll } from '../../src/ui/motion';
+import { Discover, PushCard } from '../../src/ui/grow';
 
 const ABOUT = ['Wicki är en app för utbildning. Inget i appen är investeringsråd eller en uppmaning att köpa eller sälja något.', 'Trading är riskfyllt. De flesta som daytradar förlorar pengar. Handla aldrig för pengar du inte har råd att förlora.', 'Graferna i appen är påhittade övningsgrafer, inte riktiga kurser. Simulatorn använder låtsaspengar.', 'För att öppna ett eget konto för aktiehandel krävs i regel att man är 18 år. Barn kan lära sig här utan att handla på riktigt.', 'Dina framsteg sparas bara på den här enheten.', 'Behöver du personlig rådgivning, vänd dig till en rådgivare med tillstånd från Finansinspektionen.'];
 const LOC: Record<Lang, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
@@ -25,7 +27,7 @@ export default function Profile() {
   const lesDone = ALLN.filter(n => n.k === 'les' && S.done[n.id]).length, lesAll = ALLN.filter(n => n.k === 'les').length;
   const wd = weekDays(S); const max = Math.max(GOAL(S), ...wd.map(d => d.xp));
   const stat = (v: string, l: string, col: string) => <Card style={{ flex: 1, gap: 2 }}><T raw w="x" s={22} c={col}>{v}</T><T s={12.5} c={c.muted}>{l}</T></Card>;
-  return <Screen><Header /><ScrollView refreshControl={refresh} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}>
+  return <Screen><Header /><MScroll refreshControl={refresh} contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 130 }}>
     <Row><Wick size={60} lit /><View style={{ flex: 1 }}><T w="x" s={24}>Profil</T><T raw c={c.muted}>{`${lesDone} / ${lesAll}`}</T></View></Row>
     {S.a.focus ? null : <Row>{stat(String(streakNow(S)), 'Svit', c.coral)}{stat(String(S.xp), 'Total XP', c.gold)}{stat(String(S.perfect), 'Felfria lektioner', c.up)}</Row>}
     {S.a.focus ? null : <Card style={{ gap: 10 }}><T w="x">Den här veckan</T>
@@ -44,12 +46,14 @@ export default function Profile() {
         <Btn testID="logout" kind="ghost" label="Logga ut" onPress={() => setOut(true)} />
       </> : <>
         <Row><Ionicons name="person-circle" size={40} color={c.pri} /><View style={{ flex: 1 }}><T w="b">Spara dina framsteg</T><T s={13} c={c.muted}>Logga in så följer dina framsteg med till nya telefoner.</T></View></Row>
-        <Btn testID="login" label="Logga in eller skapa konto" onPress={() => router.push('/auth')} />
+        <Btn testID="login" label="Skapa gratis konto" onPress={() => router.push({ pathname: '/auth', params: { mode: 'up', from: 'profile' } })} />
+        <Pressable testID="login-in" onPress={() => router.push('/auth')}><T w="b" c={c.pri} center>Har du redan ett konto? Logga in</T></Pressable>
       </>}
     </Card>
     {out ? <Sheet visible onClose={() => setOut(false)}><View style={{ alignItems: 'center', gap: 8 }}><Wick size={72} mood="sad" /><T w="x" s={22} center>Logga ut?</T>
       <T c={c.muted} center>Dina framsteg är sparade i kontot. Logga in igen när du vill fortsätta.</T></View>
       <Btn testID="logout-yes" kind="bad" label="Logga ut" onPress={async () => { setOut(false); await acc.signOut(); }} /><Btn kind="ghost" label="Avbryt" onPress={() => setOut(false)} /></Sheet> : null}
+    <PushCard />
     <Card testID="age" style={{ gap: 8 }}><T w="b">Ålder</T><T s={13} c={c.muted}>Används för att anpassa innehållet. Lektioner om högriskprodukter kräver att du är 18.</T>
       <Row gap={8} style={{ flexWrap: 'wrap' }}>{([['u16', 'Under 16 år'], ['u18', '16–17 år'], ['y', '18–25 år'], ['o', 'Över 25 år'], ['', 'Vill inte säga']] as const).map(([k, l]) => <Pill key={k || 'none'} label={l} on={(S.age || '') === k} onPress={() => update(s => { s.age = k; })} />)}</Row></Card>
     <Card testID="legal" style={{ gap: 6 }}><T w="b">Juridik och data</T>
@@ -74,5 +78,5 @@ export default function Profile() {
     <A11ySheet open={a11y} onClose={() => setA11y(false)} />
     {about ? <Sheet visible onClose={() => setAbout(false)}><SheetTop title="Om Wicki" onClose={() => setAbout(false)} icon={<Wick size={34} lit anim="none" />} />
       {ABOUT.map(p => <T key={p}>{p}</T>)}<Btn label="Stäng" onPress={() => setAbout(false)} /></Sheet> : null}
-  </ScrollView></Screen>;
+  </MScroll><Discover id="profile" /></Screen>;
 }

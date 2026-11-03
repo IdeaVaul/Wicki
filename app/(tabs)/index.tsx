@@ -17,11 +17,13 @@ import { BgCandles, CandlesIcon, Ring } from '../../src/ui/Deco';
 import { VIDEOS } from '../../src/data/videos';
 import { vidMins } from '../../src/engine/video';
 import { useRefresh } from '../../src/ui/Refresh';
+import { Bar, MScroll } from '../../src/ui/motion';
+import { Checklist, HomeNudges } from '../../src/ui/grow';
 
 /** Hem: svit, XP och hjärtan, Wicki som hälsar, dagens mål och nästa lektion. */
 export default function Home() {
   const { S, c, update, buzz, rtl, t } = useStore(); const ins = useSafeAreaInsets();
-  const [tip, setTip] = useState<string | null>(null);
+  const [tip, setTip] = useState<string | null>(null); const [pushOpen, setPushOpen] = useState(false);
   const refresh = useRefresh(() => setTip(pick(WTIPS[S.lang] || WTIPS.sv)), ins.top);
   if (!S.onb) return <Redirect href="/onboarding" />;
   const copy = JSON.parse(JSON.stringify(S));
@@ -38,7 +40,7 @@ export default function Home() {
     <View style={{ flex: 1, flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 99, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB }}>
       <Ionicons name={icon} size={18} color={col} /><T raw w="x" s={15}>{val}</T><T w="b" s={14}>{lab}</T></View>;
   return <Screen>
-    <ScrollView refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 14 }}>
+    <MScroll refreshControl={refresh} contentContainerStyle={{ paddingTop: ins.top + 10, paddingHorizontal: 16, paddingBottom: ins.bottom + 120, gap: 14 }}>
       {S.a.focus ? null : <Row gap={8}>
         {chip('flame', litToday(S) ? '#FF9A1F' : c.lockInk, String(streakNow(S)), 'dagar')}
         {chip('star', c.gold, String(S.xp), 'XP')}
@@ -54,10 +56,11 @@ export default function Home() {
       {S.a.focus ? null : <Card style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ flex: 1, gap: 12 }}>
           <Row gap={6}><T w="b" s={17}>Dagligt mål:</T><T raw w="b" s={17} c={c.pri}>{`${dx} / ${g} XP`}</T></Row>
-          <View style={{ height: 12, borderRadius: 99, backgroundColor: c.track, overflow: 'hidden', transform: [{ scaleX: rtl ? -1 : 1 }] }}><View style={{ width: `${pct}%`, height: '100%', borderRadius: 99, backgroundColor: c.pri }} /></View>
+          <Bar pct={pct} color={c.pri} track={c.track} rtl={rtl} />
         </View>
         <Ring pct={pct} />
       </Card>}
+      <Checklist onPush={() => setPushOpen(true)} />
       {cur ? <Card onPress={go} testID="next" style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ width: 58, height: 58, borderRadius: 16, backgroundColor: c.priSoft, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}><CandlesIcon /></View>
         <View style={{ flex: 1, gap: 3 }}><T w="b" s={17}>{`Enhet ${cur.u + 1}`}</T><T w="b" s={16}>{nodeName(cur)}</T>
@@ -76,6 +79,7 @@ export default function Home() {
         <View style={{ flex: 1 }}><T w="b">Dagens repetition</T><T s={13} c={c.muted}>Repetera det du lärt dig innan du glömmer det.</T></View>
         <View style={{ minWidth: 30, height: 30, borderRadius: 99, backgroundColor: c.gold, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 }}><T raw w="x" c="#3b2a00">{String(due)}</T></View>
       </Row></Card> : null}
-    </ScrollView>
+    </MScroll>
+    <HomeNudges pushOpen={pushOpen} setPushOpen={setPushOpen} />
   </Screen>;
 }

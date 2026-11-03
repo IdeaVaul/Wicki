@@ -5,6 +5,7 @@ import { useStore } from '../src/store';
 import { session } from '../src/session';
 import { Btn, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
+import { Enter } from '../src/ui/motion';
 
 /** Paus med andningscirkel, för den som valt pauspåminnelser. */
 export default function Pause() {
@@ -17,7 +18,7 @@ export default function Pause() {
   const done = () => { session.lastBreak = Date.now(); router.back(); };
   const phaseIn = Math.floor((120 - left) / 4) % 2 === 0;
   return <View style={{ flex: 1, backgroundColor: c.bg, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 16 }}>
-    {st === 'ask' ? <><Wick size={96} lit /><T w="x" s={24} center>Paus</T><T center>Bra jobbat! Du har pluggat en stund. Vill du ta en kort paus?</T>
+    <Enter key={st} from="scale" style={{ alignSelf: 'stretch', alignItems: 'center', gap: 16 }}>{st === 'ask' ? <><Wick size={96} lit /><T w="x" s={24} center>Paus</T><T center>Bra jobbat! Du har pluggat en stund. Vill du ta en kort paus?</T>
       <Btn kind="good" label="Ta en paus" onPress={() => setSt('run')} style={{ alignSelf: 'stretch' }} /><Btn kind="ghost" label="Fortsätt ändå" onPress={done} style={{ alignSelf: 'stretch' }} /></>
       : st === 'run' ? <>
         <Animated.View style={{ width: 150, height: 150, borderRadius: 75, borderWidth: 3, borderColor: c.up, backgroundColor: c.upSoft, transform: [{ scale: S.a.calm ? 1 : v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.05] }) }] }} />
@@ -25,6 +26,6 @@ export default function Pause() {
         <T raw w="x" s={22} center>{`${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`}</T>
         <T center c={c.muted}>Res dig gärna, sträck på dig och drick lite vatten.</T>
         <Btn kind="ghost" label="Fortsätt ändå" onPress={done} style={{ alignSelf: 'stretch' }} /></>
-        : <><Wick mood="cheer" size={96} lit anim="jump" /><T w="x" s={22} center>Pausen är klar. Välkommen tillbaka!</T><Btn label="Fortsätt" onPress={done} style={{ alignSelf: 'stretch' }} /></>}
+        : <><Wick mood="cheer" size={96} lit anim="jump" /><T w="x" s={22} center>Pausen är klar. Välkommen tillbaka!</T><Btn label="Fortsätt" onPress={done} style={{ alignSelf: 'stretch' }} /></>}</Enter>
   </View>;
 }

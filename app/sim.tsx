@@ -14,6 +14,8 @@ import { isMinorAge } from '../src/engine/course';
 import { plusOn, simPlusLock } from '../src/engine/plus';
 import { SIMMK, SIMSTOPS, simClose, simEquity, simF, simGet, simNew, simOpen, simOrder, simPrice, simSeries, simStats, simStep, simUnreal, type MkKey } from '../src/engine/sim';
 import { track } from '../src/analytics';
+import { MScroll } from '../src/ui/motion';
+import { Discover } from '../src/ui/grow';
 
 /** Handelssimulator: riskfri trading med låtsaspengar (aktie, forex, krypto, guld) och prop-utmaning. */
 export default function Sim() {
@@ -63,7 +65,7 @@ export default function Sim() {
   const bar = (v: number, col: string) => <View style={{ flex: 1, height: 8, borderRadius: 6, backgroundColor: c.track, overflow: 'hidden' }}><View style={{ width: `${Math.max(0, Math.min(100, v))}%`, height: '100%', backgroundColor: col, borderRadius: 6 }} /></View>;
   const o = side && !p && !s.res ? simOrder(s, side, minor) : null;
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
-    <ScrollView contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 40, gap: 10 }}>
+    <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 40, gap: 10 }}>
       <Row><Pressable testID="back" accessibilityLabel={t('Tillbaka')} onPress={() => { setPlay(false); router.back(); }} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
         <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={c.muted} /></Pressable></Row>
       <T w="x" s={30}>Handelssimulator</T>
@@ -131,7 +133,8 @@ export default function Sim() {
       <T raw s={14} c={c.muted}>{`${t('Bästa resultat:')} ${rec.best >= 0 ? '+' : ''}${kr(rec.best)} kr · ${t('Klarade utmaningar:')} ${rec.chal}/${rec.tries}`}</T>
       <Btn small kind="ghost" label={t('Börja om med 10 000 kr')} testID="sim-reset" onPress={() => { setPlay(false); setSide(0); update(x => { simNew(x, s.mk, s.mode); }); }} />
       <T s={13} c={c.muted} center>Stoppen sätts efter hur mycket priset brukar röra sig (ATR). R betyder hur många gånger din risk du vann eller förlorade. Hävstången följer EU:s gränser för privatpersoner. Priset är påhittat.</T>
-    </ScrollView>
+    </MScroll>
+    <Discover id="sim" />
   </View>;
 }
 

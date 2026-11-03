@@ -10,6 +10,8 @@ import { KidSheet, KidTopic, PatCard, kidConcept, kidPattern } from '../../src/u
 import { CandleChart } from '../../src/ui/Chart';
 import { patCandles } from '../../src/engine/charts';
 import { useRefresh } from '../../src/ui/Refresh';
+import { Enter } from '../../src/ui/motion';
+import { Discover } from '../../src/ui/grow';
 
 export default function Library() {
   const { c, t, font, S, rtl } = useStore();
@@ -29,12 +31,12 @@ export default function Library() {
   </View>;
   return <Screen><Header />
     {tab === 'mon' ? <FlatList refreshControl={refresh} key="mon" data={ids} numColumns={2} keyExtractor={x => x} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130 }} columnWrapperStyle={{ gap: 10 }}
-      renderItem={({ item }) => { const P = PAT[item]; const r = patCandles(item, 11); return <Pressable testID={'pat-' + item} onPress={() => setPat(item)} style={{ flex: 1, marginBottom: 10, borderWidth: 2, borderBottomWidth: 4, borderColor: c.line, borderRadius: 14, backgroundColor: c.surface, padding: 8, gap: 4 }}>
-        <CandleChart cs={r.cs.slice(-P.k - 3)} h={90} pad={8} hl={[3, 3 + P.k - 1]} /><T w="b" s={14}>{P.n}</T></Pressable>; }} />
+      renderItem={({ item, index }) => { const P = PAT[item]; const r = patCandles(item, 11); return <Enter delay={Math.min(index, 10) * 40} from="scale" style={{ flex: 1 }}><Pressable testID={'pat-' + item} onPress={() => setPat(item)} style={{ flex: 1, marginBottom: 10, borderWidth: 2, borderBottomWidth: 4, borderColor: c.line, borderRadius: 14, backgroundColor: c.surface, padding: 8, gap: 4 }}>
+        <CandleChart cs={r.cs.slice(-P.k - 3)} h={90} pad={8} hl={[3, 3 + P.k - 1]} /><T w="b" s={14}>{P.n}</T></Pressable></Enter>; }} />
       : <FlatList refreshControl={refresh} key="beg" data={terms} keyExtractor={x => x[0]} ListHeaderComponent={head} contentContainerStyle={{ padding: 16, paddingBottom: 130, gap: 10 }}
         ListEmptyComponent={<T c={c.muted}>Inget begrepp matchar.</T>}
-        renderItem={({ item: [a, b] }) => <Card style={{ gap: 4 }}><T w="x" s={16}>{a}</T><T s={14.5}>{b}</T>
-          <Pressable onPress={() => { const pid = Object.keys(PAT).find(id => PAT[id].n === a); setKid(pid ? kidPattern(pid) : kidConcept(a, b, CFIG[a])); }}><T w="x" s={12} c={c.pri} upper>✦ Steg för steg</T></Pressable></Card>} />}
+        renderItem={({ item: [a, b], index }) => <Enter delay={Math.min(index, 10) * 35}><Card style={{ gap: 4 }}><T w="x" s={16}>{a}</T><T s={14.5}>{b}</T>
+          <Pressable onPress={() => { const pid = Object.keys(PAT).find(id => PAT[id].n === a); setKid(pid ? kidPattern(pid) : kidConcept(a, b, CFIG[a])); }}><T w="x" s={12} c={c.pri} upper>✦ Steg för steg</T></Pressable></Card></Enter>} />}
     {pat ? <Sheet visible onClose={() => setPat(null)}>
       <SheetTop title="Mönster" onClose={() => setPat(null)} />
       <PatCard id={pat} />
@@ -42,5 +44,5 @@ export default function Library() {
       <Btn label="Öva på mönstret" onPress={() => { const id = pat; setPat(null); router.push({ pathname: '/lesson', params: { mode: 'pat', id } }); }} />
       <KidSheet topic={kid} onClose={() => setKid(null)} />
     </Sheet> : <KidSheet topic={kid} onClose={() => setKid(null)} />}
-  </Screen>;
+  <Discover id="library" /></Screen>;
 }

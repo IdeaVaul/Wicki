@@ -46,7 +46,7 @@ function TabBar({ state, navigation }: { state: { index: number; routes: { name:
 }
 
 export default function TabsLayout() {
-  return <Tabs screenOptions={{ headerShown: false }} tabBar={(p: any) => <TabBar {...p} />}>
+  return <Tabs screenOptions={{ headerShown: false, animation: 'shift' }} tabBar={(p: any) => <TabBar {...p} />}>
     <Tabs.Screen name="index" />
     <Tabs.Screen name="course" />
     <Tabs.Screen name="practice" />

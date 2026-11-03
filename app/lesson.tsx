@@ -18,6 +18,7 @@ import { speak, hush } from '../src/speech';
 import { LessonVideo } from '../src/ui/LessonVideo';
 import { breakDue } from '../src/session';
 import { track } from '../src/analytics';
+import { Bar, CountUp, Enter, Stagger } from '../src/ui/motion';
 
 type Mode = 'node' | 'practice' | 'review' | 'hunt' | 'next' | 'blitz' | 'placement' | 'pat' | 'scam' | 'vquiz';
 type LS = { lvEnd?: boolean;
@@ -94,7 +95,7 @@ export default function Lesson() {
     let pass = 0; if (placement) { for (let u = 0; u < 5; u++) { const r = l.place[u]; if (r && r.n && r.ok >= Math.max(1, r.n - 1)) pass++; else break; } }
     const newBest = timed && l.ok > (S.best60 || 0);
     track('lesson_done', { mode, unit: node?.u, kind: node?.k, perfect, mistakes: l.mist, xp, secs: Math.round((Date.now() - l.start) / 1000) });
-    update(s => { if (node) s.done[node.id] = 1; addXP(s, xp); s.lessons++; Q(s).lessons++; if (perfect && !timed) s.perfect++; if (practice) { heartsNow(s); s.hearts = Math.min(5, s.hearts + 1); }
+    update(s => { if (node) s.done[node.id] = 1; if (practice && mode !== 'vquiz') { s.grow = s.grow || {}; s.grow.ck = { ...(s.grow.ck || {}), review: 1 }; } addXP(s, xp); s.lessons++; Q(s).lessons++; if (perfect && !timed) s.perfect++; if (practice) { heartsNow(s); s.hearts = Math.min(5, s.hearts + 1); }
       if (newBest) s.best60 = l.ok; if (placement) UNITS.slice(0, pass).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); touchStreak(s); });
     buzz('done');
     return { ...l, phase: 'end', xp, perfect, time: Date.now() - l.start, plPass: placement ? pass : undefined, newBest };
@@ -115,7 +116,7 @@ export default function Lesson() {
   /* ---------- skärmar ---------- */
   if (L.phase === 'nohearts' || (L.phase === 'ex' && !practice && hearts === 0 && !L.st)) return (
     <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: ins.top + 20, padding: 20, alignItems: 'center', justifyContent: 'center', gap: 14 }}>
-      <Wick mood="sad" size={110} anim="shake" /><T w="x" s={24} center>Slut på hjärtan</T>
+      <Enter from="scale"><Wick mood="sad" size={110} anim="shake" /></Enter><T w="x" s={24} center>Slut på hjärtan</T>
       <T center c={c.muted}>Repetera dina misstag för att vinna tillbaka ett hjärta. Ett nytt hjärta kommer också var 30:e minut.</T>
       <T center c={c.muted}>{`Nästa hjärta om ${nextHeartMin(S)} min`}</T>
       <Btn label="Öva för +1 hjärta" kind="good" onPress={() => router.replace({ pathname: '/lesson', params: { mode: 'practice' } })} style={{ alignSelf: 'stretch' }} />
@@ -125,12 +126,12 @@ export default function Lesson() {
     const title = placement ? 'Nivåtestet klart!' : timed ? (L.newBest ? 'Nytt rekord!' : 'Snabbrunda klar!') : L.perfect && !practice ? 'Felfri lektion!' : 'Lektionen klar!';
     const tile = (lab: string, val: string, col: string) => <View style={{ flex: 1, borderRadius: 16, borderWidth: 2, borderColor: col, overflow: 'hidden' }}><View style={{ backgroundColor: col, paddingVertical: 4 }}><T w="x" s={11} c="#fff" center upper>{lab}</T></View><T raw w="x" s={22} c={col} center style={{ paddingVertical: 10 }}>{val}</T></View>;
     return <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: ins.top + 30, paddingBottom: ins.bottom + 16, paddingHorizontal: 20, alignItems: 'center', gap: 16 }}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, alignSelf: 'stretch' }}>
-        <Wick mood="cheer" size={120} lit anim="dance" /><T w="x" s={28} c={c.gold} center>{title}</T>
-        {S.a.focus ? null : <Row style={{ alignSelf: 'stretch' }}>{tile('TOTAL XP', '⚡' + L.xp, c.gold)}{tile('PRECISION', acc + '%', c.up)}{timed ? tile('RÄTT', String(L.ok), c.pri) : tile('TID', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`, c.pri)}</Row>}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, alignSelf: 'stretch' }}><Stagger step={110}>
+        <Enter from="scale"><Wick mood="cheer" size={120} lit anim="dance" /></Enter><T w="x" s={28} c={c.gold} center>{title}</T>
+        {S.a.focus ? null : <Row style={{ alignSelf: 'stretch' }}><CountUp to={L.xp || 0} render={n => tile('TOTAL XP', '⚡' + n, c.gold)} /><CountUp to={acc} render={n => tile('PRECISION', n + '%', c.up)} />{timed ? tile('RÄTT', String(L.ok), c.pri) : tile('TID', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`, c.pri)}</Row>}
         {placement ? <T w="x" s={17} center>{L.plPass ? `Du börjar på enhet ${L.plPass + 1}: ${t(UNITS[Math.min(L.plPass, UNITS.length - 1)].title)}` : 'Du börjar från början. Det är helt rätt ställe!'}</T> : null}
         <T center c={c.muted}>Lite varje dag slår mycket ibland. Det gäller både lärande och trading.</T>
-      </View>
+      </Stagger></View>
       {placement ? null : <Btn kind="ghost" label="Utmana en kompis" testID="share" onPress={() => { const n = L.ok; const txt = (CHALL[S.lang] || CHALL.sv)(n, timed) + ' ' + SHARE_URL; Share.share({ message: txt }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />}
       <Btn label="Fortsätt" onPress={leave} style={{ alignSelf: 'stretch' }} testID="primary" />
     </View>; }
@@ -182,13 +183,13 @@ export default function Lesson() {
         <Pressable testID="quit" accessibilityLabel={t('Avsluta')} onPress={() => mut(l => { l.quit = true; })} style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}><T raw w="b" s={18} c={c.muted}>✕</T></Pressable>
         <View style={{ flex: 1, gap: 8 }}>
           {timed ? null : <T w="b" s={15} c={c.muted}>{`Fråga ${Math.min(L.i + 1, L.q.length)} av ${L.q.length}`}</T>}
-          <View style={{ height: 10, borderRadius: 99, backgroundColor: c.track, overflow: 'hidden', transform: [{ scaleX: rtl ? -1 : 1 }] }}><View style={{ width: `${Math.max(4, prog * 100)}%`, height: '100%', backgroundColor: c.pri, borderRadius: 99 }} /></View>
+          <Bar pct={Math.max(4, prog * 100)} color={c.pri} track={c.track} h={10} rtl={rtl} />
         </View>
         {timed ? <T raw w="x" c={c.pri}>{`⏱ ${Math.max(0, Math.ceil(((L.end || 0) - Date.now()) / 1000))}`}</T> : practice ? <T raw w="x" s={20} c={c.pri}>∞</T> : <T raw w="x" c={c.down}>{`♥ ${hearts}`}</T>}
       </Row>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 10, paddingBottom: 40 }}>
         {showSay && e.t !== 'lvid' ? <Btn kind="ghost" small label="🔊 Läs upp" onPress={() => speak(qText(e), S.lang)} style={{ alignSelf: rtl ? 'flex-end' : 'flex-start' }} /> : null}
-        {body()}
+        <Enter key={'ex' + L.i} from="side" dy={rtl ? -16 : 16}>{body()}</Enter>
         {!L.st && !timed && !e.noHint && e.pat && (e.t === 'spot' || e.t === 'mc') ? <Row style={{ alignItems: 'flex-end', marginTop: 6 }} gap={12}>
           <Pressable accessibilityLabel={t('Hjälp mig förstå')} onPress={() => setKid(kidPattern(e.pat!))}><Wick size={e.t === 'spot' ? 80 : 56} /></Pressable>
           <Pressable testID="hint" onPress={() => setKid(kidPattern(e.pat!))} style={{ flex: 1, marginBottom: 24, backgroundColor: c.bub, borderColor: c.bubB, borderWidth: 1, borderRadius: 22, padding: 14 }}>
@@ -196,7 +197,7 @@ export default function Lesson() {
         </Row> : null}
       </ScrollView>
       <View style={{ borderTopWidth: L.st ? 1 : 0, borderColor: ok ? c.bubB : c.down, backgroundColor: L.st ? (ok ? c.upSoft : c.downSoft) : 'transparent', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 16, paddingBottom: ins.bottom + 16, gap: 10 }}>
-        {L.st ? <Row style={{ alignItems: 'flex-start' }}><Wick mood={ok ? 'cheer' : 'sad'} size={34} lit anim={ok ? 'jump' : 'shake'} />
+        {L.st ? <Enter key={'fb' + L.i} dy={22}><Row style={{ alignItems: 'flex-start' }}><Wick mood={ok ? 'cheer' : 'sad'} size={34} lit anim={ok ? 'jump' : 'shake'} />
           <View style={{ flex: 1, gap: 4 }}>
             <T w="x" s={19} c={ok ? c.pri : c.down}>{ok ? L.msg : 'Rätt svar:'}</T>
             {ok && combo >= 3 && !S.a.focus ? <T w="x" s={13} c={c.gold}>{`${combo} i rad`}</T> : null}
@@ -204,7 +205,7 @@ export default function Lesson() {
             {e.why && !timed ? <T s={14} c={ok ? c.upD : c.downD}>{e.why}</T> : null}
             {!timed && (e.why || !ok) ? <Pressable testID="kid-a" onPress={() => setKid({ key: 'a:' + e.id, title: 'Wicki förklarar', fb: [...(!ok && e.t === 'mc' ? [t('Rätt svar:') + ' ' + t(e.opts!.find(o => o.k === e.ans)!.l)] : []), ...(e.why ? [e.why] : [])] })}>
               <T w="x" s={12} c={ok ? c.upD : c.downD} upper>✦ Förklara steg för steg</T></Pressable> : null}
-          </View></Row> : null}
+          </View></Row></Enter> : null}
         {timed && L.st ? null : e.t === 'match' && !L.st ? <Btn label="Kontrollera" disabled /> :
           <Btn testID="primary" label={e.t === 'lvid' && !L.st ? (L.lvEnd ? 'Till frågorna' : 'Hoppa till frågorna') : L.st || intro ? 'Fortsätt' : 'Kontrollera'} kind={L.st ? (ok ? 'good' : 'bad') : 'pri'} disabled={!L.st && !can} onPress={primary} />}
       </View>

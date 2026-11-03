@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
+import { AppState, Pressable, Text, View } from 'react-native';
+import { Stack, router, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Rubik_500Medium, Rubik_700Bold, Rubik_800ExtraBold } from '@expo-google-fonts/rubik';
@@ -10,6 +10,9 @@ import { StoreProvider, useStore } from '../src/store';
 import { AccountProvider } from '../src/account/Account';
 import { hookErrors, newId, reportError, screen, setTelemetry } from '../src/analytics';
 import { plusOn } from '../src/engine/plus';
+import { useReminders } from '../src/ui/grow';
+import { onOpen, reschedule } from '../src/notify';
+import { track } from '../src/analytics';
 
 /** Håller statistik och kraschrapporter i takt med samtycket, och loggar vilken skärm man är på. */
 function Telemetry() {
@@ -17,6 +20,19 @@ function Telemetry() {
   useEffect(() => { if (S.stats && !S.did) update(s => { s.did = newId(); }); }, [S.stats, S.did]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setTelemetry({ ok: !!S.stats, did: S.did || '', lang: S.lang, age: S.age, plus: plusOn(S) }); hookErrors(); }, [S.stats, S.did, S.lang, S.age, S.plus]);
   useEffect(() => { screen(path || '/'); }, [path, S.stats, S.did]);
+  return null;
+}
+
+/** Påminnelser: håller schemat aktuellt och öppnar rätt skärm när man trycker på en påminnelse. */
+function Reminders() {
+  const { S, update } = useStore(); useReminders();
+  const Sref = React.useRef(S); Sref.current = S;
+  useEffect(() => onOpen((url, kind, id) => {
+    if (id && Sref.current.grow?.lastN === id) return;
+    update(s => { s.grow = s.grow || {}; s.grow.lastN = id; }); track('push_open', { kind });
+    setTimeout(() => { try { router.push(url as any); } catch { } }, 350);
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const sub = AppState.addEventListener('change', (st: string) => { if (st === 'active') reschedule(Sref.current); }); return () => sub?.remove?.(); }, []);
   return null;
 }
 
@@ -32,13 +48,14 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 }
 
 function Inner() {
-  const { ready, dark, c } = useStore();
+  const { ready, dark, c, S } = useStore();
   if (!ready) return null;
   return <>
     <Telemetry />
+    <Reminders />
     <StatusBar style={dark ? 'light' : 'dark'} />
     {/* Svep från vänsterkanten (var som helst på skärmen) = tillbaka, som i Instagram och TikTok. */}
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, gestureEnabled: true, fullScreenGestureEnabled: true }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg }, gestureEnabled: true, fullScreenGestureEnabled: true, animation: S.a.calm ? 'fade' : 'slide_from_right', animationDuration: 280 }}>
       <Stack.Screen name="(tabs)" />
       {/* Helskärmsvyer visas som vanliga skärmar som glider upp, inte som iOS-modaler. En ersatt (replace) iOS-modal kunde lämna
           ett osynligt lager kvar ovanpå flikarna så att Kurs, Öva och Profil slutade svara på tryck. */}
