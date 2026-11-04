@@ -42,7 +42,7 @@ for sid, name, src, f, line in SETS:
     try:
         rows = f()[-420:]
         if len(rows) < 60: errs.append(f'{sid}: för få ({len(rows)})'); continue
-        dec = 4 if rows[-1][4] < 10 else 2
+        dec = 4 if (line or rows[-1][4] < 100) else 2
         o = {'id': sid, 'name': name, 'src': src, 'dates': [r[0] for r in rows], 'cs': [[round(x, dec) for x in r[1:]] for r in rows]}
         if line: o['line'] = True
         out.append(o); print('ok', sid, len(rows))
