@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAccount } from '../../src/account/Account';
 import { useRefresh } from '../../src/ui/Refresh';
-import { plusOn, priceNow, YEAR_KR } from '../../src/engine/plus';
+import { PLUS_ENABLED, plusOn, priceNow, YEAR_KR } from '../../src/engine/plus';
 import { PL, STATS } from '../../src/data/plus-dict';
 import { MScroll } from '../../src/ui/motion';
 import { Discover, PushCard } from '../../src/ui/grow';
@@ -34,10 +34,10 @@ export default function Profile() {
       <Row style={{ alignItems: 'flex-end', height: 110 }}>{wd.map(d => <View key={d.key} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
         <View style={{ width: '70%', height: Math.max(4, d.xp / max * 80), backgroundColor: d.xp >= GOAL(S) ? c.gold : c.pri, borderRadius: 6 }} />
         <T raw s={11} c={c.muted}>{new Intl.DateTimeFormat(LOC[S.lang], { weekday: 'narrow' }).format(d.date)}</T></View>)}</Row></Card>}
-    <Card testID="plus" onPress={() => router.push({ pathname: '/plus', params: { from: 'profile' } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: c.gold }}>
+    {PLUS_ENABLED ? <Card testID="plus" onPress={() => router.push({ pathname: '/plus', params: { from: 'profile' } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: c.gold }}>
       <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.goldSoft, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="diamond" size={22} color={c.gold} /></View>
       <View style={{ flex: 1 }}><T raw w="b">{PLT.card}</T><T raw s={13} c={c.muted}>{plusOn(S) && S.plus?.plan === 'm' ? PLT.cardOn(priceNow(S)) : plusOn(S) ? PLT.cardOn(Math.round(YEAR_KR / 12)) : PLT.cardOff}</T></View>
-      <Ionicons name="chevron-forward" size={20} color={c.muted} /></Card>
+      <Ionicons name="chevron-forward" size={20} color={c.muted} /></Card> : null}
     <Card testID="account" style={{ gap: 10 }}>
       {acc.email ? <>
         <Row><View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.priSoft, alignItems: 'center', justifyContent: 'center' }}><T raw w="x" s={18} c={c.pri}>{(acc.name || acc.email || '?').slice(0, 1).toUpperCase()}</T></View>

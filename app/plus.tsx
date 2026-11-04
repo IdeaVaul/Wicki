@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../src/store';
 import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
-import { LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
+import { PLUS_ENABLED, LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
 import { PL } from '../src/data/plus-dict';
 import { track } from '../src/analytics';
 import { MScroll } from '../src/ui/motion';
@@ -15,6 +15,10 @@ const LOC: Record<string, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar:
 
 /** Wicki Plus: välj plan, se lojalitetstrappan, hantera och säg upp. Testversionen gör låtsasköp – inga pengar dras. */
 export default function Plus() {
+  if (!PLUS_ENABLED) return <Redirect href="/" />;
+  return <PlusScreen />;
+}
+function PlusScreen() {
   const p = useLocalSearchParams<{ from?: string }>();
   const { S, c, rtl, update, buzz } = useStore(); const ins = useSafeAreaInsets();
   const L = PL[S.lang] || PL.sv; const [plan, setPlan] = useState<'m' | 'y'>('m'); const [ask, setAsk] = useState(false);

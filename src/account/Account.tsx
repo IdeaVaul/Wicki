@@ -68,7 +68,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
 
   /** Raderar kontot (om inloggad) och all data på enheten. Returnerar ett felmeddelande eller null. */
   const deleteAll = async (): Promise<string | null> => {
-    if (uid) { if (pushT.current) clearTimeout(pushT.current); const { error } = await supabase.rpc('delete_my_account'); if (error) return 'Kontot kunde inte raderas. Kontrollera anslutningen och försök igen.'; try { await supabase.auth.signOut(); } catch { } pulled.current = null; }
+    if (uid) { if (pushT.current) clearTimeout(pushT.current); try { await (await import('./social')).appleCall({ action: 'revoke' }); } catch { } const { error } = await supabase.rpc('delete_my_account'); if (error) return 'Kontot kunde inte raderas. Kontrollera anslutningen och försök igen.'; try { await supabase.auth.signOut(); } catch { } pulled.current = null; }
     const lang = Sref.current.lang;
     update(s => { const fresh = normalize(JSON.parse(JSON.stringify(DEFAULT))); Object.keys(s).forEach(k => delete (s as any)[k]); Object.assign(s, fresh); s.lang = lang; s.onb = false; });
     return null;

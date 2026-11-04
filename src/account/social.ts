@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL, SUPABASE_KEY } from './supabase';
 import { authErr } from './Account';
 
 /** Inloggning med Apple (inbyggd i iOS) och Google (Supabase OAuth i en säker webbläsarflik).
@@ -33,6 +33,8 @@ export async function signInApple(): Promise<string | null> {
     // Apple skickar namnet bara första gången: spara det i kontot.
     const n = [cred.fullName?.givenName, cred.fullName?.familyName].filter(Boolean).join(' ');
     if (n) await supabase.auth.updateUser({ data: { name: n } }).catch(() => { });
+    // Spara Apples token på servern så att den kan återkallas om kontot raderas.
+    if (cred.authorizationCode) appleCall({ action: 'store', code: cred.authorizationCode }).catch(() => { });
     return null;
   } catch (e: any) {
     if (e?.code === 'ERR_REQUEST_CANCELED' || e?.code === 'ERR_CANCELED') return null;
@@ -59,4 +61,10 @@ export async function signInGoogle(): Promise<string | null> {
     if (at && rt) { const r = await supabase.auth.setSession({ access_token: at, refresh_token: rt }); return r.error ? authErr(r.error.message) : null; }
     return 'Något gick fel. Försök igen.';
   } catch { return 'Något gick fel. Försök igen.'; }
+}
+
+/** Anropar wicki-apple (spara eller återkalla Apples token) med det inloggade kontot. */
+export async function appleCall(body: { action: 'store'; code: string } | { action: 'revoke' }) {
+  const { data } = await supabase.auth.getSession(); const tok = data.session?.access_token; if (!tok) return;
+  await fetch(`${SUPABASE_URL}/functions/v1/wicki-apple`, { method: 'POST', headers: { Authorization: `Bearer ${tok}`, apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 }

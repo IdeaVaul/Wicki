@@ -28,8 +28,11 @@ const periodMs = (S: State) => (S.plus?.plan === 'y' ? 12 : 1) * MONTH;
 export function periodEnd(S: State, at = nowP(S)) {
   if (!S.plus) return 0; const p = periodMs(S); const n = Math.floor(Math.max(0, at - S.plus.since) / p) + 1; return S.plus.since + n * p;
 }
+/** Betalningen är avstängd i första App Store-versionen: allt är gratis och inga Plus-skärmar visas. */
+export const PLUS_ENABLED = false;
 /** Plus är aktivt tills perioden man redan betalat för tar slut, även efter uppsägning. */
 export function plusOn(S: State) {
+  if (!PLUS_ENABLED) return true;
   if (!S.plus) return false; if (!S.plus.cancel) return true; return nowP(S) < periodEnd(S, S.plus.cancel);
 }
 export const plusLock = (S: State, n: { u: number }) => !plusOn(S) && PLUS_UNITS.has(n.u);

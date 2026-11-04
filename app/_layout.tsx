@@ -9,7 +9,7 @@ import { IBMPlexSansArabic_500Medium, IBMPlexSansArabic_700Bold } from '@expo-go
 import { StoreProvider, useStore } from '../src/store';
 import { AccountProvider } from '../src/account/Account';
 import { hookErrors, newId, reportError, screen, setTelemetry } from '../src/analytics';
-import { plusOn } from '../src/engine/plus';
+import { PLUS_ENABLED, plusOn } from '../src/engine/plus';
 import { useReminders } from '../src/ui/grow';
 import { useLeagueSync } from '../src/ui/online';
 import { onOpen, reschedule } from '../src/notify';
@@ -19,7 +19,7 @@ import { track } from '../src/analytics';
 function Telemetry() {
   const { S, update } = useStore(); const path = usePathname();
   useEffect(() => { if (S.stats && !S.did) update(s => { s.did = newId(); }); }, [S.stats, S.did]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { setTelemetry({ ok: !!S.stats, did: S.did || '', lang: S.lang, age: S.age, plus: plusOn(S) }); hookErrors(); }, [S.stats, S.did, S.lang, S.age, S.plus]);
+  useEffect(() => { setTelemetry({ ok: !!S.stats, did: S.did || '', lang: S.lang, age: S.age, plus: PLUS_ENABLED && plusOn(S) }); hookErrors(); }, [S.stats, S.did, S.lang, S.age, S.plus]);
   useEffect(() => { screen(path || '/'); }, [path, S.stats, S.did]);
   return null;
 }
