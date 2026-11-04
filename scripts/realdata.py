@@ -1,7 +1,7 @@
 """Hämtar riktiga historiska kurser till lektionerna (src/data/real.ts). Körs av GitHub Actions (.github/workflows/realdata.yml).
 Bara källor som tillåter visning i appar:
 - CoinGecko (krypto, OHLC). Kräver texten "Powered by CoinGecko" där datan visas.
-- ECB:s referenskurser för valutor via Frankfurter. Kräver källangivelse "Source: ECB statistics". Bara dagliga stängningskurser,
+- ECB:s referenskurser för valutor, direkt från ECB:s API. Kräver källangivelse "Source: ECB statistics". Bara dagliga stängningskurser,
   därför markeras de som linjegrafer (line: true) och ritas som linje, inte som påhittade ljus."""
 import json, os, urllib.request, datetime as dt
 UA = {'User-Agent': 'Wicki data job', 'Accept': 'application/json'}
@@ -15,11 +15,16 @@ def cg_ohlc(coin, days):
     fmt = '%Y-%m-%d %H:%M' if days <= 30 else '%Y-%m-%d'
     return [(dt.datetime.utcfromtimestamp(k[0] / 1000).strftime(fmt), k[1], k[2], k[3], k[4]) for k in a]
 def ecb(base, quote, days):
+    """ECB:s egna API (data-api.ecb.europa.eu). Kurserna anges som quote per 1 EUR, så base måste vara EUR."""
     a = (dt.date.today() - dt.timedelta(days=days)).isoformat()
-    j = get(f'https://api.frankfurter.app/{a}..?from={base}&to={quote}')
-    ks = sorted(j['rates']); out = []
-    for i, d in enumerate(ks):
-        c = j['rates'][d][quote]; o = j['rates'][ks[i - 1]][quote] if i else c
+    url = f'https://data-api.ecb.europa.eu/service/data/EXR/D.{quote}.EUR.SP00.A?format=csvdata&startPeriod={a}'
+    txt = urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'Wicki data job', 'Accept': 'text/csv'}), timeout=60).read().decode()
+    import csv, io
+    rows = list(csv.DictReader(io.StringIO(txt)))
+    pts = sorted((r['TIME_PERIOD'], float(r['OBS_VALUE'])) for r in rows if r.get('OBS_VALUE'))
+    out = []
+    for i, (d, c) in enumerate(pts):
+        o = pts[i - 1][1] if i else c
         out.append((d, o, max(o, c), min(o, c), c))
     return out
 SETS = [
@@ -30,7 +35,7 @@ SETS = [
     ('eth365', 'Ethereum (4d)', 'CoinGecko', lambda: cg_ohlc('ethereum', 365), False),
     ('eurusd', 'EUR/USD', 'ECB', lambda: ecb('EUR', 'USD', 600), True),
     ('eursek', 'EUR/SEK', 'ECB', lambda: ecb('EUR', 'SEK', 600), True),
-    ('usdsek', 'USD/SEK', 'ECB', lambda: ecb('USD', 'SEK', 600), True),
+    ('eurgbp', 'EUR/GBP', 'ECB', lambda: ecb('EUR', 'GBP', 600), True),
 ]
 out = []; errs = []
 for sid, name, src, f, line in SETS:
