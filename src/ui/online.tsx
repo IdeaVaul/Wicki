@@ -37,12 +37,13 @@ export function MarketCard() {
         <Spark cs={x.cs.slice(-40)} up={x.ch >= 0} w={104} />
       </Press></Enter>)}
     </ScrollView>}
+    <T raw s={11} c={c.muted}>Powered by CoinGecko · Source: ECB statistics</T>
     <Sheet visible={!!open} onClose={() => setOpen(null)}>
       {open ? <>
         <SheetTop title={t(open.name)} onClose={() => setOpen(null)} />
         <Row style={{ justifyContent: 'space-between' }}><T raw w="x" s={26}>{fmt(open.price)}</T><T raw w="x" s={16} c={open.ch >= 0 ? c.up : c.down}>{`${open.ch >= 0 ? '+' : ''}${open.ch.toFixed(2)} %`}</T></Row>
-        <CandleChart cs={open.cs.map(r => ({ o: r[0], h: r[1], l: r[2], c: r[3], v: 0 }))} h={220} pad={8} ma={20} />
-        <T raw s={12} c={c.muted}>{`${open.tf === '1h' ? t('Timljus') : t('Dagsljus')} · ${t('Källa')}: ${open.src} · ${open.at.replace('T', ' ')}`}</T>
+        <CandleChart cs={open.cs.map(r => ({ o: r[0], h: r[1], l: r[2], c: r[3], v: 0 }))} h={220} pad={8} ma={open.line ? 0 : 20} asLine={!!open.line} />
+        <T raw s={12} c={c.muted}>{`${open.line ? t('Dagliga referenskurser') : t('Timljus')} · ${open.src === 'CoinGecko' ? 'Powered by CoinGecko' : 'Source: ECB statistics'} · ${open.at.replace('T', ' ').slice(0, 16)}`}</T>
         <T s={13} c={c.muted}>Kurserna visas för att du ska öva på att läsa riktiga grafer. Det är inga råd om att köpa eller sälja.</T>
         <Btn label="Öva på riktiga grafer" onPress={() => { setOpen(null); router.push({ pathname: '/lesson', params: { mode: 'real' } }); }} />
       </> : null}

@@ -26,7 +26,7 @@ export type Ex = {
   msg?: { from: string; text: string }; noHint?: boolean;
   /** Praktiska övningar: tk = vad som ska tryckas ut (stöd, motstånd, stop-loss), lo–hi = godkänt prisintervall, mark = facit,
    *  entry = köppris, unit = enhet för inskrivet svar, reveal = hela riktiga grafen som visas efter svaret, note = källa. */
-  tk?: 'sup' | 'res' | 'stop'; lo?: number; hi?: number; mark?: number; entry?: number; unit?: string; reveal?: Candle[]; note?: string;
+  tk?: 'sup' | 'res' | 'stop'; lo?: number; hi?: number; mark?: number; entry?: number; unit?: string; reveal?: Candle[]; note?: string; line?: boolean;
 };
 export type A11y = Partial<Record<'lex' | 'space' | 'tint' | 'readQ' | 'focus' | 'short' | 'fewer' | 'breaks' | 'notime' | 'cb' | 'calm' | 'tap', boolean>>;
 export type Lang = 'sv' | 'en' | 'fr' | 'ar';

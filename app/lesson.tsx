@@ -181,7 +181,7 @@ export default function Lesson() {
       if (L.st) lines.push({ y: e.mark!, c: 'up', t: t('Facit') });
       const shown = L.st && e.reveal ? e.reveal : e.cs!;
       return <View style={{ gap: 10 }}><T w="x" s={24}>{e.q}</T><T c={c.muted}>{tp == null ? 'Tryck i grafen för att dra en linje.' : 'Tryck igen för att flytta linjen.'}</T>
-        <Card style={{ padding: 10, gap: 4 }}><CandleChart cs={shown} h={220} pad={10} lines={lines} onTap={L.st ? undefined : ((_i: number, price: number) => { buzz('tap'); mut(l => { l.tp = price; }); })} />
+        <Card style={{ padding: 10, gap: 4 }}><CandleChart cs={shown} h={220} pad={10} lines={lines} asLine={!!e.line} onTap={L.st ? undefined : ((_i: number, price: number) => { buzz('tap'); mut(l => { l.tp = price; }); })} />
           {e.note ? <T raw s={12} c={c.muted}>{e.note}</T> : null}</Card></View>; }
     if (e.t === 'num') { const v = L.num || ''; const key = (k: string) => { if (L.st) return; buzz('tap'); mut(l => { const cur = l.num || ''; l.num = k === '<' ? cur.slice(0, -1) : (cur + k).replace(/^0+(?=\d)/, '').slice(0, 7); }); };
       return <View style={{ gap: 12 }}><T w="x" s={22}>{e.q}</T>

@@ -44,6 +44,8 @@ const ROWS: [string, string, string, string][] = [
   ['eller med e-post', 'or with email', 'ou avec un e-mail', 'أو بالبريد الإلكتروني'],
   ['Inloggning med Apple är inte påslagen än.', 'Sign in with Apple isn\'t switched on yet.', 'La connexion avec Apple n\'est pas encore activée.', 'تسجيل الدخول عبر Apple غير مفعّل بعد.'],
   ['Inloggning med Google är inte påslagen än.', 'Sign in with Google isn\'t switched on yet.', 'La connexion avec Google n\'est pas encore activée.', 'تسجيل الدخول عبر Google غير مفعّل بعد.'],
+  ['Dagliga referenskurser', 'Daily reference rates', 'Cours de référence quotidiens', 'أسعار مرجعية يومية'],
+  ['De flesta graferna är påhittade övningsgrafer. Övningarna med riktiga grafer och Marknaden nu visar riktiga kurser för krypto (Powered by CoinGecko) och valutor (Source: ECB statistics). Simulatorn använder låtsaspengar.', 'Most charts are made-up practice charts. The real-chart exercises and Markets now show real prices for crypto (Powered by CoinGecko) and currencies (Source: ECB statistics). The simulator uses play money.', 'La plupart des graphiques sont fictifs. Les exercices sur graphiques réels et Les marchés affichent de vrais cours de crypto (Powered by CoinGecko) et de devises (Source: ECB statistics). Le simulateur utilise de l\'argent fictif.', 'معظم الرسوم البيانية تدريبية مختلقة. تعرض تمارين الرسوم الحقيقية والسوق الآن أسعارًا حقيقية للعملات المشفرة (Powered by CoinGecko) والعملات (Source: ECB statistics). يستخدم المحاكي أموالًا وهمية.'],
   ['Guld', 'Gold', 'Or', 'الذهب'], ['Olja (Brent)', 'Oil (Brent)', 'Pétrole (Brent)', 'النفط (برنت)'],
 ];
 export const ONLINE_DICT: Record<string, Record<string, string>> = { en: {}, fr: {}, ar: {} };

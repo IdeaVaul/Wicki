@@ -64,9 +64,9 @@ export async function askAI(req: AiReq, lang: string, age?: string): Promise<{ t
 }
 
 /* ---------------- Marknadsdata ---------------- */
-export type Quote = { id: string; name: string; price: number; ch: number; at: string; tf: string; src: string; cs: number[][] };
+export type Quote = { id: string; name: string; price: number; ch: number; at: string; tf: string; src: string; cs: number[][]; line?: boolean };
 let qCache: { t: number; ids: string; v: Quote[] } | null = null;
-export async function quotes(ids = 'omx,spx,btc,gold,eursek'): Promise<Quote[] | null> {
+export async function quotes(ids = 'btc,eth,sol,eurusd,eursek'): Promise<Quote[] | null> {
   if (qCache && qCache.ids === ids && Date.now() - qCache.t < 60e3) return qCache.v;
   try {
     const r = await fetch(`${SUPABASE_URL}/functions/v1/wicki-quotes?ids=${ids}`, { headers: { apikey: SUPABASE_KEY } });
