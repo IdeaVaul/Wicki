@@ -72,6 +72,7 @@ function Inner() {
       <Stack.Screen name="myths" />
       <Stack.Screen name="league" />
       <Stack.Screen name="ask" options={{ animation: 'slide_from_bottom' }} />
+      <Stack.Screen name="auth-callback" options={{ animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="pause" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
   </>;

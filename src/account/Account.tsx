@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import * as Linking from 'expo-linking';
 import { AppState } from 'react-native';
 import { useStore } from '../store';
 import { DEFAULT, normalize } from '../engine/state';
@@ -78,9 +79,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     refresh: async () => { if (uid) { try { await sync(uid); } catch { } } },
     signIn: async (e, pw) => { const { error } = await supabase.auth.signInWithPassword({ email: e.trim(), password: pw }); return authErr(error?.message); },
     signUp: async (e, pw, nm) => { if (pw.length < 8) return { err: 'Lösenordet måste vara minst 8 tecken.', confirm: false };
-      const { data, error } = await supabase.auth.signUp({ email: e.trim(), password: pw, options: { data: { name: nm.trim(), app: 'wicki' } } });
+      const { data, error } = await supabase.auth.signUp({ email: e.trim(), password: pw, options: { data: { name: nm.trim(), app: 'wicki' }, emailRedirectTo: Linking.createURL('auth-callback') } });
       return { err: authErr(error?.message), confirm: !error && !data.session }; },
-    reset: async e => { const { error } = await supabase.auth.resetPasswordForEmail(e.trim()); return authErr(error?.message); },
+    reset: async e => { const { error } = await supabase.auth.resetPasswordForEmail(e.trim(), { redirectTo: Linking.createURL('auth-callback') }); return authErr(error?.message); },
     signOut: async () => {
       if (uid) { if (pushT.current) clearTimeout(pushT.current); await push(uid, Sref.current); }
       await supabase.auth.signOut(); pulled.current = null;
