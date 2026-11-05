@@ -16,6 +16,7 @@ jobs:
       - run: |
           mkdir -p ci
           (npx tsc --noEmit > ci/tsc.txt 2>&1; echo "TSC_RC=$?" >> ci/tsc.txt) || true
+          (npm audit --omit=dev > ci/audit.txt 2>&1; echo "AUDIT_RC=$?" >> ci/audit.txt) || true
           tail -40 setup.log > ci/setup-tail.txt
           git config user.name "wicki-ci"; git config user.email "actions@users.noreply.github.com"
           git add -f ci; git commit -m "Typkontroll ${GITHUB_SHA::7}" || true
