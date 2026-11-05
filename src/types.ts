@@ -47,7 +47,7 @@ export type State = {
   /** Diagramverktyg i simulatorn (indikatorer, tidsram, ritade nivåer och trendlinjer). */
   simTools?: import('./engine/simtools').SimTools;
   /** Tillväxt: valda smärtpunkter, sedda upptäcktsark, kom-igång-listan, när kontofrågan och påminnelsefrågan visades, påminnelser på/av och klockslag. */
-  grow?: { pains?: string[]; seen?: Record<string, 1>; ck?: Record<string, 1>; ckDone?: 1; ckHide?: 1; saveAt?: number; saveN?: number; askAt?: number; askN?: number; push?: boolean; hour?: number; lastN?: string };
+  grow?: { pains?: string[]; motive?: string; seen?: Record<string, 1>; ck?: Record<string, 1>; ckDone?: 1; ckHide?: 1; saveAt?: number; saveN?: number; askAt?: number; askN?: number; push?: boolean; hour?: number; lastN?: string };
 };
 
 /** Videoskolan */
