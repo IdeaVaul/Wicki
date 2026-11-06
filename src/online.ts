@@ -73,3 +73,32 @@ export async function quotes(ids = 'btc,eth,sol,eurusd,eursek'): Promise<Quote[]
     const j = await r.json(); if (!Array.isArray(j.quotes)) return null; qCache = { t: Date.now(), ids, v: j.quotes }; return j.quotes;
   } catch { return null; }
 }
+
+/* ---------------- Vännernas trades (simulatorn) ---------------- */
+export type FriendTrade = { id: number; user_id: string; name: string; mk: string; mode: string; side: 1 | -1; r: number; pl_pct: number; why: string; at: string;
+  reacts: Record<string, number>; mine: string | null; me: boolean };
+export const REACTS = [['fire', '🔥'], ['clap', '👏'], ['brain', '🧠']] as const;
+/** Sparar en avslutad simulator-affär så att vännerna ser den. */
+export async function shareTrade(uid: string, t: { mk: string; mode: string; side: 1 | -1; R: number; plPct: number; why: string }) {
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, Math.round(v * 100) / 100));
+  await supabase.from('wicki_trades').insert({ user_id: uid, mk: t.mk, mode: t.mode, side: t.side, r: clamp(t.R, -50, 50), pl_pct: clamp(t.plPct, -100, 1000), why: t.why.slice(0, 24) });
+}
+/** Senaste affärerna från dig och dina vänner, med reaktioner. */
+export async function friendTrades(uid: string): Promise<FriendTrade[]> {
+  const { data: rows } = await supabase.from('wicki_trades').select('id,user_id,mk,mode,side,r,pl_pct,why,created_at').order('created_at', { ascending: false }).limit(30);
+  if (!rows || !rows.length) return [];
+  const ids = rows.map((r: any) => r.id); const users = [...new Set(rows.map((r: any) => r.user_id as string))];
+  const [{ data: rx }, { data: profs }] = await Promise.all([
+    supabase.from('wicki_trade_reacts').select('trade_id,user_id,emoji').in('trade_id', ids),
+    supabase.from('wicki_profiles').select('user_id,name').in('user_id', users),
+  ]);
+  const nm = new Map<string, string>((profs || []).map((p: any) => [p.user_id, p.name]));
+  return rows.map((r: any) => { const mine = (rx || []).find((x: any) => x.trade_id === r.id && x.user_id === uid) as any;
+    const reacts: Record<string, number> = {}; (rx || []).filter((x: any) => x.trade_id === r.id).forEach((x: any) => { reacts[x.emoji] = (reacts[x.emoji] || 0) + 1; });
+    return { id: r.id, user_id: r.user_id, name: nm.get(r.user_id) || 'Trader', mk: r.mk, mode: r.mode, side: r.side, r: +r.r, pl_pct: +r.pl_pct, why: r.why, at: r.created_at, reacts, mine: mine?.emoji || null, me: r.user_id === uid }; });
+}
+/** Sätter, byter eller tar bort din reaktion på en väns affär. */
+export async function reactTrade(uid: string, id: number, emoji: string | null) {
+  if (!emoji) { await supabase.from('wicki_trade_reacts').delete().eq('trade_id', id).eq('user_id', uid); return; }
+  await supabase.from('wicki_trade_reacts').upsert({ trade_id: id, user_id: uid, emoji });
+}

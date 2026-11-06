@@ -41,13 +41,13 @@ export type State = {
   haptics: boolean; theme: 'system' | 'light' | 'dark'; skin2?: number; vids?: Record<string, number>; vrate?: number; vsound?: boolean; lvs?: Record<string, number>; lvcc?: boolean; age?: '' | 'u16' | 'u18' | 'y' | 'o';
   tts: boolean; big: boolean; hc: boolean; a: A11y;
   /** Wicki Plus. since = när nuvarande abonnemang startade (styr lojalitetspriset), cancel = när det sades upp, off = förskjutning i testläge. */
-  plus?: { plan: 'm' | 'y'; since: number; cancel?: number; test?: boolean; off?: number } | null;
+  plus?: { plan: 'm' | 'y'; since: number; cancel?: number; test?: boolean; off?: number; trial?: number } | null;
   /** Samtycke till anonym statistik (PostHog) och kraschrapporter (Sentry). undefined = inte frågat än. */
   stats?: boolean; did?: string;
   /** Diagramverktyg i simulatorn (indikatorer, tidsram, ritade nivåer och trendlinjer). */
   simTools?: import('./engine/simtools').SimTools;
   /** Tillväxt: valda smärtpunkter, sedda upptäcktsark, kom-igång-listan, när kontofrågan och påminnelsefrågan visades, påminnelser på/av och klockslag. */
-  grow?: { pains?: string[]; motive?: string; seen?: Record<string, 1>; ck?: Record<string, 1>; ckDone?: 1; ckHide?: 1; saveAt?: number; saveN?: number; askAt?: number; askN?: number; push?: boolean; hour?: number; lastN?: string };
+  grow?: { pains?: string[]; motive?: string; seen?: Record<string, 1>; ck?: Record<string, 1>; ckDone?: 1; ckHide?: 1; saveAt?: number; saveN?: number; askAt?: number; askN?: number; push?: boolean; hour?: number; lastN?: string; share?: boolean };
 };
 
 /** Videoskolan */

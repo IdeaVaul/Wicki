@@ -39,7 +39,10 @@ export const plusLock = (S: State, n: { u: number }) => !plusOn(S) && PLUS_UNITS
 /** Simulatorn: aktier i fri träning är gratis, övriga marknader och prop-utmaningen kräver Plus. */
 export const simPlusLock = (S: State, what: 'stock' | 'fx' | 'crypto' | 'gold' | 'chal') => !plusOn(S) && what !== 'stock';
 
-export function startPlus(s: State, plan: 'm' | 'y') { s.plus = { plan, since: Date.now() + (s.plus?.off || 0), test: true, off: s.plus?.off || 0 }; }
+/** Första gången får man prova gratis i 30 dagar, som hos de största tradingapparna. */
+export const TRIAL_DAYS = 30;
+export function startPlus(s: State, plan: 'm' | 'y') { const first = !s.plus; const now = Date.now() + (s.plus?.off || 0);
+  s.plus = { plan, since: now, test: true, off: s.plus?.off || 0, ...(first ? { trial: now + TRIAL_DAYS * 864e5 } : {}) }; }
 export function cancelPlus(s: State) { if (s.plus && !s.plus.cancel) s.plus.cancel = nowP(s); }
 /** Ångra uppsägningen innan perioden tagit slut: lojalitetspriset finns kvar. */
 export function resumePlus(s: State) { if (s.plus && s.plus.cancel && plusOn(s)) delete s.plus.cancel; }

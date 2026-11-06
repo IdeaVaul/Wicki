@@ -1,5 +1,17 @@
 /** Översättningar för veckoliga, vänner, Fråga Wicki (AI) och marknadsdata. [svenska, engelska, franska, arabiska] */
 const ROWS: [string, string, string, string][] = [
+  ['Tradingjournal', 'Trading journal', 'Journal de trading', 'سجل التداول'],
+  ['Saldo', 'Balance', 'Solde', 'الرصيد'],
+  ['Avkastning', 'Return', 'Rendement', 'العائد'],
+  ['Vinnande affärer', 'Winning trades', 'Trades gagnants', 'صفقات رابحة'],
+  ['Snitt per affär', 'Average per trade', 'Moyenne par trade', 'المتوسط لكل صفقة'],
+  ['Låtsaspengar, påhittade priser', 'Pretend money, made-up prices', 'Argent fictif, prix inventés', 'أموال وهمية وأسعار مُختلقة'],
+  ['Delning med vänner är avstängd. Ändra i Veckoligan.', 'Sharing with friends is off. Change it in the weekly league.', 'Le partage avec tes amis est désactivé. Modifie-le dans la ligue.', 'المشاركة مع الأصدقاء متوقفة. غيّرها في الدوري الأسبوعي.'],
+  ['Dina affärer syns för dina vänner i Veckoligan.', 'Your trades are visible to your friends in the weekly league.', 'Tes trades sont visibles par tes amis dans la ligue.', 'صفقاتك مرئية لأصدقائك في الدوري الأسبوعي.'],
+  ['Vännernas trades', 'Friends’ trades', 'Trades des amis', 'صفقات الأصدقاء'],
+  ['Dela mina simulator-trades', 'Share my simulator trades', 'Partager mes trades du simulateur', 'مشاركة صفقاتي في المحاكي'],
+  ['Bara dina vänner ser dem. Resultat i procent och R, aldrig belopp.', 'Only your friends see them. Results in percent and R, never amounts.', 'Seuls tes amis les voient. Résultats en pourcentage et en R, jamais en montants.', 'يراها أصدقاؤك فقط. النتائج بالنسبة المئوية وR، دون مبالغ أبدًا.'],
+  ['Inga trades än. När du och dina vänner avslutar affärer i simulatorn syns de här.', 'No trades yet. When you and your friends close trades in the simulator, they show up here.', 'Pas encore de trades. Quand toi et tes amis clôturez des trades dans le simulateur, ils apparaissent ici.', 'لا توجد صفقات بعد. عندما تغلق أنت وأصدقاؤك صفقات في المحاكي ستظهر هنا.'],
   ['Kom igång', 'Get started', 'Commencer', 'ابدأ'],
   ['Hej! Jag är Wicki.', 'Hi! I’m Wicki.', 'Salut ! Je suis Wicki.', 'مرحبًا! أنا Wicki.'],
   ['Jag blir din personliga tradingcoach.', 'I’ll be your personal trading coach.', 'Je serai ton coach de trading personnel.', 'سأكون مدربك الشخصي في التداول.'],

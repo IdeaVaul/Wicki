@@ -6,12 +6,51 @@ import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../src/store';
 import { Btn, Card, Row, T } from '../src/ui/kit';
 import { Wick } from '../src/ui/Wick';
-import { PLUS_ENABLED, LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
+import { PLUS_ENABLED, TRIAL_DAYS, LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
 import { PL } from '../src/data/plus-dict';
 import { track } from '../src/analytics';
 import { MScroll } from '../src/ui/motion';
 
 const LOC: Record<string, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
+
+/** Texter för betalväggen i TradingView-stil: rubrik efter var man kom ifrån, jämförelse, frågor och bekräftelse. */
+type PXT = { ctx: Record<string, string>; trial: string; trialSub: (kr: string) => string; cmpT: string; free: string; rows: [string, boolean | string, boolean | string][];
+  faqT: string; faq: [string, string][]; welT: string; welSub: (d: string) => string; go: string; trialUntil: (d: string) => string };
+const PX: Record<string, PXT> = {
+  sv: { ctx: { course: 'Lås upp nästa avsnitt', sim_prop: 'Ta prop-utmaningen', sim: 'Handla alla marknader', ai: 'Fråga Wicki AI utan gräns', def: 'Gå hela vägen med Wicki' },
+    trial: `Prova gratis i ${TRIAL_DAYS} dagar`, trialSub: kr => `Sedan ${kr}. Säg upp när du vill – innan provperioden tar slut kostar det ingenting.`,
+    cmpT: 'Gratis eller Plus', free: 'Gratis',
+    rows: [['Grunder, risk och bluffar', true, true], ['Övningar på riktiga grafer', true, true], ['Simulator: aktier', true, true], ['Strategier, makro och fler marknader', false, true],
+      ['Simulator: forex, krypto och guld', false, true], ['Prop-utmaningen', false, true]],
+    faqT: 'Vanliga frågor', faq: [['Kan jag säga upp när som helst?', 'Ja. Du säger upp i App Store och behåller Plus tills perioden du betalat för tar slut.'],
+      ['Vad händer efter provperioden?', 'Om du inte säger upp startar prenumerationen automatiskt.'], ['Är grunderna fortfarande gratis?', 'Ja. Allt om risk, grunder och bluffar är alltid gratis.']],
+    welT: 'Välkommen till Wicki Plus!', welSub: d => `Allt är upplåst. Nästa dragning: ${d}.`, go: 'Börja lära', trialUntil: d => `Gratis till ${d}` },
+  en: { ctx: { course: 'Unlock the next section', sim_prop: 'Take the prop challenge', sim: 'Trade every market', ai: 'Ask Wicki AI without limits', def: 'Go all the way with Wicki' },
+    trial: `Try free for ${TRIAL_DAYS} days`, trialSub: kr => `Then ${kr}. Cancel any time – nothing is charged before the trial ends.`,
+    cmpT: 'Free or Plus', free: 'Free',
+    rows: [['Basics, risk and scams', true, true], ['Exercises on real charts', true, true], ['Simulator: stocks', true, true], ['Strategies, macro and more markets', false, true],
+      ['Simulator: forex, crypto and gold', false, true], ['The prop challenge', false, true]],
+    faqT: 'Questions', faq: [['Can I cancel any time?', 'Yes. Cancel in the App Store and keep Plus until the period you paid for ends.'],
+      ['What happens after the trial?', 'If you don’t cancel, the subscription starts automatically.'], ['Are the basics still free?', 'Yes. Everything about risk, basics and scams is always free.']],
+    welT: 'Welcome to Wicki Plus!', welSub: d => `Everything is unlocked. Next charge: ${d}.`, go: 'Start learning', trialUntil: d => `Free until ${d}` },
+  fr: { ctx: { course: 'Débloque la section suivante', sim_prop: 'Relève le défi prop', sim: 'Trade tous les marchés', ai: 'Demande à Wicki AI sans limite', def: 'Va jusqu’au bout avec Wicki' },
+    trial: `Essai gratuit de ${TRIAL_DAYS} jours`, trialSub: kr => `Ensuite ${kr}. Résilie quand tu veux – rien n’est facturé avant la fin de l’essai.`,
+    cmpT: 'Gratuit ou Plus', free: 'Gratuit',
+    rows: [['Bases, risque et arnaques', true, true], ['Exercices sur de vrais graphiques', true, true], ['Simulateur : actions', true, true], ['Stratégies, macro et plus de marchés', false, true],
+      ['Simulateur : forex, crypto et or', false, true], ['Le défi prop', false, true]],
+    faqT: 'Questions fréquentes', faq: [['Puis-je résilier à tout moment ?', 'Oui. Résilie dans l’App Store et garde Plus jusqu’à la fin de la période payée.'],
+      ['Que se passe-t-il après l’essai ?', 'Si tu ne résilies pas, l’abonnement démarre automatiquement.'], ['Les bases restent-elles gratuites ?', 'Oui. Tout sur le risque, les bases et les arnaques reste gratuit.']],
+    welT: 'Bienvenue dans Wicki Plus !', welSub: d => `Tout est débloqué. Prochain prélèvement : ${d}.`, go: 'Commencer', trialUntil: d => `Gratuit jusqu’au ${d}` },
+  ar: { ctx: { course: 'افتح القسم التالي', sim_prop: 'خُض تحدي الحساب الممول', sim: 'تداول في كل الأسواق', ai: 'اسأل Wicki AI بلا حدود', def: 'أكمل الطريق مع Wicki' },
+    trial: `جرّب مجانًا لمدة ${TRIAL_DAYS} يومًا`, trialSub: kr => `ثم ${kr}. ألغِ متى شئت، ولا يُخصم شيء قبل انتهاء التجربة.`,
+    cmpT: 'مجاني أم Plus', free: 'مجاني',
+    rows: [['الأساسيات والمخاطر والاحتيال', true, true], ['تمارين على رسوم حقيقية', true, true], ['المحاكي: الأسهم', true, true], ['الاستراتيجيات والاقتصاد الكلي وأسواق أكثر', false, true],
+      ['المحاكي: الفوركس والعملات المشفرة والذهب', false, true], ['تحدي الحساب الممول', false, true]],
+    faqT: 'أسئلة شائعة', faq: [['هل يمكنني الإلغاء في أي وقت؟', 'نعم. ألغِ من App Store واحتفظ بـ Plus حتى نهاية الفترة المدفوعة.'],
+      ['ماذا يحدث بعد التجربة؟', 'إذا لم تُلغِ، يبدأ الاشتراك تلقائيًا.'], ['هل تبقى الأساسيات مجانية؟', 'نعم. كل ما يتعلق بالمخاطر والأساسيات والاحتيال مجاني دائمًا.']],
+    welT: 'مرحبًا بك في Wicki Plus!', welSub: d => `كل شيء مفتوح. الخصم التالي: ${d}.`, go: 'ابدأ التعلّم', trialUntil: d => `مجاني حتى ${d}` },
+};
+
 
 /** Wicki Plus: välj plan, se lojalitetstrappan, hantera och säg upp. Testversionen gör låtsasköp – inga pengar dras. */
 export default function Plus() {
@@ -22,6 +61,8 @@ function PlusScreen() {
   const p = useLocalSearchParams<{ from?: string }>();
   const { S, c, rtl, update, buzz } = useStore(); const ins = useSafeAreaInsets();
   const L = PL[S.lang] || PL.sv; const [plan, setPlan] = useState<'m' | 'y'>('m'); const [ask, setAsk] = useState(false);
+  const X = PX[S.lang] || PX.sv; const [done, setDone] = useState(false); const [faq, setFaq] = useState(-1);
+  const from = p.from || 'direct'; const ctxKey = from.startsWith('sim_prop') ? 'sim_prop' : from.startsWith('sim') ? 'sim' : from === 'course' ? 'course' : from === 'ai' ? 'ai' : 'def';
   const on = plusOn(S); const sub = !!S.plus && on;
   const date = (ms: number) => new Date(ms).toLocaleDateString(LOC[S.lang] || 'sv-SE', { day: 'numeric', month: 'long', year: 'numeric' });
   useEffect(() => { if (!sub) track('paywall_view', { from: p.from || 'direct' }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,13 +94,20 @@ function PlusScreen() {
     <T raw s={13} c={c.muted}>{L.freeNote}</T>
   </Card>;
 
+  if (done && S.plus) {
+    const nxt = S.plus.trial || periodEnd(S);
+    return <View style={{ flex: 1, backgroundColor: c.bg, padding: 24, paddingTop: ins.top + 40, paddingBottom: ins.bottom + 24, justifyContent: 'center', gap: 16 }}>
+      <View style={{ alignItems: 'center', gap: 10 }}><Wick size={120} mood="cheer" lit anim="dance" /><T raw w="x" s={28} center>{X.welT}</T><T raw c={c.muted} center>{X.welSub(date(nxt))}</T></View>
+      <Btn testID="plus-go" kind="gold" label={X.go} onPress={() => router.back()} />
+    </View>;
+  }
   if (sub) {
     const P = S.plus!; const m = plusMonths(S); const nx = nextStep(S); const end = periodEnd(S, P.cancel || undefined);
     return <View style={{ flex: 1, backgroundColor: c.bg }}>
       <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
         {close}
         <View style={{ alignItems: 'center', gap: 6 }}><Wick size={90} mood="cheer" lit /><T raw w="x" s={28} center>{L.mine}</T>
-          <T raw c={c.muted} center>{P.plan === 'y' ? L.yearly(YEAR_KR) : L.monthly(priceNow(S))}</T></View>
+          <T raw c={c.muted} center>{P.plan === 'y' ? L.yearly(YEAR_KR) : L.monthly(priceNow(S))}</T>{P.trial && P.trial > Date.now() ? <T raw w="b" c={c.up} center>{X.trialUntil(date(P.trial))}</T> : null}</View>
         <Card style={{ gap: 6 }}>
           <Row style={{ justifyContent: 'space-between' }}><T raw c={c.muted}>{L.member}</T><T raw w="b">{L.months(m)}</T></Row>
           <Row style={{ justifyContent: 'space-between' }}><T raw c={c.muted}>{P.cancel ? L.endsOn : L.nextPay}</T><T raw w="b">{date(end)}</T></Row>
@@ -85,8 +133,17 @@ function PlusScreen() {
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
     <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 20, paddingBottom: ins.bottom + 40, gap: 14 }}>
       {close}
-      <View style={{ alignItems: 'center', gap: 6 }}><Wick size={96} mood="cheer" lit /><T raw w="x" s={30} center>Wicki Plus</T><T raw c={c.muted} center>{L.sub}</T></View>
+      <View style={{ alignItems: 'center', gap: 6 }}><Wick size={96} mood="cheer" lit /><T raw w="b" s={13} c={c.gold} upper>Wicki Plus</T><T raw w="x" s={28} center>{X.ctx[ctxKey]}</T><T raw c={c.muted} center>{L.sub}</T></View>
       {perks}
+      <Card style={{ gap: 8 }}>
+        <T raw w="x" s={17}>{X.cmpT}</T>
+        <Row style={{ justifyContent: 'flex-end' }}><T raw w="b" s={12.5} c={c.muted} style={{ width: 70 }} center>{X.free}</T><T raw w="b" s={12.5} c={c.gold} style={{ width: 70 }} center>Plus</T></Row>
+        {X.rows.map(([f, a, b], i) => <Row key={i} style={{ paddingVertical: 6, borderTopWidth: 1, borderColor: c.glassB }}>
+          <T raw s={14} style={{ flex: 1 }}>{f}</T>
+          {[a, b].map((v, k) => <View key={k} style={{ width: 70, alignItems: 'center' }}>{typeof v === 'string' ? <T raw w="b" s={12.5} c={k ? c.gold : c.muted} center>{v}</T>
+            : <Ionicons name={v ? 'checkmark-circle' : 'remove'} size={20} color={v ? (k ? c.gold : c.up) : c.muted} />}</View>)}
+        </Row>)}
+      </Card>
       <Row gap={10}>
         {(['m', 'y'] as const).map(k => { const sel = plan === k;
           return <Pressable key={k} testID={'plan-' + k} accessibilityRole="radio" accessibilityState={{ selected: sel }} onPress={() => { setPlan(k); buzz('tap'); }}
@@ -99,7 +156,12 @@ function PlusScreen() {
       </Row>
       {plan === 'm' ? ladder : null}
       {restart ? <T raw s={13.5} c={c.muted}>{L.restart}</T> : null}
-      <Btn testID="buy" kind="gold" label={L.start} onPress={() => { update(s => startPlus(s, plan)); buzz('done'); track('plus_start', { plan, from: p.from || 'direct', test: true }); }} />
+      <Btn testID="buy" kind="gold" label={restart ? L.start : X.trial} onPress={() => { update(s => startPlus(s, plan)); buzz('done'); setDone(true); track('plus_start', { plan, from, test: true, trial: !restart }); }} />
+      {restart ? null : <T raw s={13} c={c.muted} center>{X.trialSub(plan === 'm' ? `${LADDER[0].kr} kr/mån` : `${YEAR_KR} kr/år`)}</T>}
+      <Card style={{ gap: 4 }}><T raw w="x" s={17}>{X.faqT}</T>
+        {X.faq.map(([q, a], i) => <Pressable key={i} onPress={() => setFaq(faq === i ? -1 : i)} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderColor: c.glassB, gap: 4 }}>
+          <Row style={{ justifyContent: 'space-between' }}><T raw w="b" s={14.5} style={{ flex: 1 }}>{q}</T><Ionicons name={faq === i ? 'chevron-up' : 'chevron-down'} size={18} color={c.muted} /></Row>
+          {faq === i ? <T raw s={14} c={c.muted}>{a}</T> : null}</Pressable>)}</Card>
       <T raw s={12.5} c={c.muted} center>{L.testNote}</T>
       <T raw s={12} c={c.muted} center>{L.legal}</T>
       <Row gap={14} style={{ justifyContent: 'center' }}>

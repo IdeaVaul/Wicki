@@ -16,6 +16,9 @@ import { SIMMK, SIMSTOPS, simClose, simEquity, simF, simGet, simNew, simOpen, si
 import { track } from '../src/analytics';
 import { MScroll } from '../src/ui/motion';
 import { Discover } from '../src/ui/grow';
+import Svg, { Polyline } from 'react-native-svg';
+import { useAccount } from '../src/account/Account';
+import { shareTrade } from '../src/online';
 
 /** Handelssimulator: riskfri trading med låtsaspengar (aktie, forex, krypto, guld) och prop-utmaning. */
 export default function Sim() {
@@ -33,6 +36,12 @@ export default function Sim() {
   // Utan Plus (t.ex. när Plus tagit slut): tillbaka till aktier i fri träning.
   useEffect(() => { if (s && !plusOn(S) && (s.mk !== 'stock' || s.mode === 'chal') && !s.pos) update(x => { simNew(x, 'stock', 'free'); }); }, [plusOn(S), s?.mk, s?.mode]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (s && minor && s.mode === 'chal' && !s.res && !s.pos) update(x => { simNew(x, s.mk, 'free'); }); }, [minor, s?.mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Varje avslutad affär delas med vännerna (om man är inloggad och inte stängt av delning).
+  const acc = useAccount(); const lastN = useRef<number | null>(null);
+  useEffect(() => {
+    const tr = s?.trades?.[0]; if (!s || !tr) return; if (lastN.current == null) { lastN.current = tr.n; return; } if (tr.n === lastN.current) return; lastN.current = tr.n;
+    if (acc.uid && S.grow?.share !== false) shareTrade(acc.uid, { mk: s.mk, mode: s.mode, side: tr.side, R: tr.R, plPct: tr.pl / s.start * 100, why: tr.why }).catch(() => { });
+  }, [s?.trades?.[0]?.n]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!s) return <View style={{ flex: 1, backgroundColor: c.bg }} />;
   const M = SIMMK[s.mk], cs = simSeries(s), vis = cs.slice(Math.max(0, s.i - 44), s.i + 1), eq = simEquity(s), pl = eq - s.start, price = simPrice(s), p = s.pos, chal = s.mode === 'chal';
   const qd = M.step < 1 ? 3 : 0;
@@ -124,9 +133,10 @@ export default function Sim() {
         <Btn small label="+10" kind="ghost" testID="sim-step10" onPress={() => step(10)} style={{ flexGrow: 1 }} />
       </View>}
       {p ? <T raw s={14} c={c.muted}>{`${t(p.side > 0 ? 'Lång position' : 'Kort position')} ${simF(p.qty, qd)} · ${t('Orealiserat:')} ${ur >= 0 ? '+' : ''}${kr(Math.round(ur))} kr`}</T> : null}
-      <T w="x" s={20} style={{ marginTop: 8 }}>Dina affärer</T>
-      {st ? <T raw s={14} c={c.muted}>{`${st.n} ${t('affärer')} · ${st.wr} % ${t('vinnare')} · ${t('snitt')} ${st.avg.toFixed(2)}R`}</T>
+      <T w="x" s={20} style={{ marginTop: 8 }}>Tradingjournal</T>
+      {st ? <Journal s={s} eq={eq} st={st} />
         : <T s={14} c={c.muted}>Inga avslutade affärer än. Varje avslutad affär ger 5 XP (max 30 XP per dag).</T>}
+      {acc.uid ? <Pressable onPress={() => router.push('/league')}><T s={13} c={c.pri} w="b">{S.grow?.share === false ? 'Delning med vänner är avstängd. Ändra i Veckoligan.' : 'Dina affärer syns för dina vänner i Veckoligan.'}</T></Pressable> : null}
       {s.trades.slice(0, 12).map(tr => <Row key={tr.n} style={{ justifyContent: 'space-between', paddingVertical: 4 }}>
         <T raw s={13.5}>{`#${tr.n} ${t(tr.side > 0 ? 'Köp' : 'Blankning')} · ${t(tr.why)}`}</T>
         <T raw s={13.5} w="b" c={tr.pl >= 0 ? c.up : c.down}>{`${tr.pl >= 0 ? '+' : ''}${kr(Math.round(tr.pl))} kr · ${tr.R >= 0 ? '+' : ''}${tr.R.toFixed(1)}R`}</T></Row>)}
@@ -149,5 +159,27 @@ function SimFear({ cs, i }: { cs: import('../src/types').Candle[]; i: number }) 
     </View>
     <View style={{ height: 8, borderRadius: 99, backgroundColor: c.track, overflow: 'hidden', flexDirection: rtl ? 'row-reverse' : 'row' }}><View style={{ width: `${Math.min(100, v / 60 * 100)}%`, backgroundColor: col }} /></View>
     <T w="b" s={12.5} c={col}>{fearLabel(v)}</T>
+  </Card>;
+}
+
+/** Journalen: saldo, avkastning, träffsäkerhet och snitt-R, plus kurvan över avslutade affärer. */
+function Journal({ s, eq, st }: { s: SimState; eq: number; st: { n: number; wr: number; avg: number } }) {
+  const { c, t, rtl } = useStore(); const ret = (eq - s.start) / s.start * 100;
+  // Kontokurvan: startkapital plus resultatet efter varje affär, äldst först.
+  const pts = s.trades.slice().reverse().reduce<number[]>((a, tr) => [...a, a[a.length - 1] + tr.pl], [s.start]);
+  const lo = Math.min(...pts), hi = Math.max(...pts), sp = hi - lo || 1, W = 300, H = 56;
+  const poly = pts.map((v, i) => `${(i / Math.max(1, pts.length - 1) * W).toFixed(1)},${(H - (v - lo) / sp * (H - 6) - 3).toFixed(1)}`).join(' ');
+  const tile = (v: string, l: string, col?: string) => <View style={{ flex: 1, minWidth: '45%', backgroundColor: c.track, borderRadius: 14, padding: 10, gap: 2 }}>
+    <T raw w="x" s={18} c={col}>{v}</T><T s={12} c={c.muted}>{l}</T></View>;
+  return <Card style={{ gap: 10 }}>
+    <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
+      {tile(`${kr(Math.round(eq))} kr`, 'Saldo')}
+      {tile(`${ret >= 0 ? '+' : ''}${ret.toFixed(1)} %`, 'Avkastning', ret >= 0 ? c.up : c.down)}
+      {tile(`${st.wr} %`, 'Vinnande affärer')}
+      {tile(`${st.avg >= 0 ? '+' : ''}${st.avg.toFixed(2)}R`, 'Snitt per affär', st.avg >= 0 ? c.up : c.down)}
+    </View>
+    {pts.length > 2 ? <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <Polyline points={poly} fill="none" stroke={pts[pts.length - 1] >= s.start ? c.up : c.down} strokeWidth={2.4} strokeLinejoin="round" /></Svg> : null}
+    <T raw s={12.5} c={c.muted}>{`${st.n} ${t('affärer')} · ${t('Låtsaspengar, påhittade priser')}`}</T>
   </Card>;
 }
