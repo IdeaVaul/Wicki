@@ -6,7 +6,7 @@ import { useStore } from '../src/store';
 import type { Ex, PathNode } from '../src/types';
 import { NODE, UNITS } from '../src/engine/course';
 import { adaptQ, buildReal, buildBlitz, buildScam, buildVidQuiz, buildHunt, buildLesson, buildNext, buildPatPractice, buildPlacement, buildPractice, buildReview } from '../src/engine/exercises';
-import { Q, addXP, dueKeys, heartsNow, loseHeart, nextHeartMin, srsMark, touchStreak } from '../src/engine/state';
+import { Q, addXP, dueKeys, heartsNow, loseHeart, nextHeartMin, srsMark, streakNow, touchStreak } from '../src/engine/state';
 import { pick, shuffle } from '../src/engine/util';
 import { figSpec } from '../src/engine/charts';
 import { PAT } from '../src/data/patterns';
@@ -28,7 +28,7 @@ type LS = { lvEnd?: boolean; tp?: number | null; num?: string;
   q: Ex[]; i: number; st: null | 'ok' | 'no'; sel: string | number | null; arr: number[];
   m: { sa: number | null; sb: number | null; done: number[]; err: [number, number] | null; bad: boolean };
   mist: number; ok: number; start: number; retried: number[]; phase: 'ex' | 'end' | 'nohearts';
-  msg: string; end?: number; place: Record<number, { ok: number; n: number }>; plPass?: number; xp?: number; perfect?: boolean; time?: number; newBest?: boolean; quit?: boolean;
+  msg: string; rs?: number[]; end?: number; place: Record<number, { ok: number; n: number }>; plPass?: number; xp?: number; perfect?: boolean; time?: number; newBest?: boolean; quit?: boolean;
 };
 const SHARE_URL = 'https://claude.ai/artifact/FmvoZUXVTXHB6vpJFhZVBe';
 const CHALL: Record<string, (n: number, b: boolean) => string> = {
@@ -37,6 +37,31 @@ const CHALL: Record<string, (n: number, b: boolean) => string> = {
   fr: (n, b) => b ? `J'ai eu ${n} bonnes réponses en 60 secondes sur Wicki. Tu fais mieux ?` : `J'ai fini une leçon Wicki avec ${n} bonnes réponses. Tu viens ?`,
   ar: (n, b) => b ? `حصلت على ${n} إجابات صحيحة في 60 ثانية على Wicki. هل تستطيع أن تتفوق عليّ؟` : `أنهيت درسًا في Wicki بـ ${n} إجابات صحيحة. هل تنضم؟`,
 };
+/** Delbart resultat i Wordle-stil: ett ljus per fråga, grönt för rätt och rött för fel. */
+const SHT: Record<string, { les: string; blitz: string; prac: string; days: (n: number) => string; btn: string }> = {
+  sv: { les: 'Lektion', blitz: 'Snabbrunda', prac: 'Övning', days: n => `${n} ${n === 1 ? 'dag' : 'dagar'} i rad`, btn: 'Dela resultatet' },
+  en: { les: 'Lesson', blitz: 'Speed round', prac: 'Practice', days: n => `${n}-day streak`, btn: 'Share result' },
+  fr: { les: 'Leçon', blitz: 'Partie rapide', prac: 'Entraînement', days: n => `${n} ${n === 1 ? 'jour' : 'jours'} d’affilée`, btn: 'Partager le résultat' },
+  ar: { les: 'درس', blitz: 'جولة سريعة', prac: 'تمرين', days: n => `${n} أيام متتالية`, btn: 'شارك النتيجة' },
+};
+function shareText(lang: string, kind: 'les' | 'blitz' | 'prac', rs: number[], streak: number) {
+  const X = SHT[lang] || SHT.sv; const ok = rs.filter(Boolean).length;
+  const rows: string[] = []; for (let i = 0; i < rs.length; i += 10) rows.push(rs.slice(i, i + 10).map(v => v ? '🟩' : '🟥').join(''));
+  return `Wicki 🕯️ ${X[kind]} ${ok}/${rs.length}\n${rows.join('\n')}${streak > 1 ? `\n🔥 ${X.days(streak)}` : ''}\n${SHARE_URL}`;
+}
+/** Kortet på slutskärmen: ljusen som rutnät, så att det blir något man vill visa. */
+function ResultCard({ rs, streak, kind }: { rs: number[]; streak: number; kind: 'les' | 'blitz' | 'prac' }) {
+  const { c, S } = useStore(); const X = SHT[S.lang] || SHT.sv; const ok = rs.filter(Boolean).length;
+  return <View style={{ alignSelf: 'stretch', borderRadius: 22, padding: 16, gap: 12, backgroundColor: c.surface, borderWidth: 1, borderColor: c.glassB, alignItems: 'center' }}>
+    <Row style={{ justifyContent: 'space-between', alignSelf: 'stretch' }}><T raw w="x" s={15}>{`Wicki · ${X[kind]}`}</T><T raw w="x" s={15} c={c.up}>{`${ok}/${rs.length}`}</T></Row>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
+      {rs.map((v, i) => <Enter key={i} delay={200 + i * 60} from="scale"><View style={{ width: 22, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ position: 'absolute', width: 2, height: 40, backgroundColor: v ? c.up : c.down, borderRadius: 1 }} />
+        <View style={{ width: 16, height: v ? 26 : 22, borderRadius: 4, backgroundColor: v ? c.up : c.down }} /></View></Enter>)}
+    </View>
+    {streak > 1 ? <T raw w="b" s={14} c={c.coral}>{`🔥 ${X.days(streak)}`}</T> : null}
+  </View>;
+}
 const MSGS = ['Bra jobbat!', 'Snyggt!', 'Helt rätt!', 'Perfekt!', 'Klockrent!'];
 
 export default function Lesson() {
@@ -88,7 +113,7 @@ export default function Lesson() {
       if (!timed && !placement) srsMark(s, ex, ok, retried);
     });
     buzz(ok ? 'ok' : 'no');
-    mut(l => { l.st = ok ? 'ok' : 'no'; if (ok) l.ok++; else l.mist++; l.msg = pick(MSGS);
+    mut(l => { l.st = ok ? 'ok' : 'no'; if (ok) l.ok++; else l.mist++; l.msg = pick(MSGS); if (!retried) l.rs = [...(l.rs || []), ok ? 1 : 0];
       if (placement && ex.pu != null && !retried) { const r = l.place[ex.pu] || (l.place[ex.pu] = { ok: 0, n: 0 }); r.n++; if (ok) r.ok++; } });
     if (timed) setTimeout(() => advance(), 450);
   }
@@ -135,7 +160,10 @@ export default function Lesson() {
         {placement ? <T w="x" s={17} center>{L.plPass ? `Du börjar på enhet ${L.plPass + 1}: ${t(UNITS[Math.min(L.plPass, UNITS.length - 1)].title)}` : 'Du börjar från början. Det är helt rätt ställe!'}</T> : null}
         <T center c={c.muted}>Lite varje dag slår mycket ibland. Det gäller både lärande och trading.</T>
       </Stagger></View>
-      {placement ? null : <Btn kind="ghost" label="Utmana en kompis" testID="share" onPress={() => { const n = L.ok; const txt = (CHALL[S.lang] || CHALL.sv)(n, timed) + ' ' + SHARE_URL; Share.share({ message: txt }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />}
+      {placement ? null : L.rs && L.rs.length >= 3 ? <>
+        <ResultCard rs={L.rs} streak={streakNow(S)} kind={timed ? 'blitz' : practice ? 'prac' : 'les'} />
+        <Btn kind="ghost" label={(SHT[S.lang] || SHT.sv).btn} testID="share" left={<Ionicons name="share-outline" size={18} color={c.ink} />} onPress={() => { track('result_share', { kind: timed ? 'blitz' : practice ? 'prac' : 'les', n: L.rs!.length }); Share.share({ message: shareText(S.lang, timed ? 'blitz' : practice ? 'prac' : 'les', L.rs!, streakNow(S)) }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />
+      </> : <Btn kind="ghost" label="Utmana en kompis" testID="share" onPress={() => { const n = L.ok; const txt = (CHALL[S.lang] || CHALL.sv)(n, timed) + ' ' + SHARE_URL; Share.share({ message: txt }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />}
       <Btn label="Fortsätt" onPress={leave} style={{ alignSelf: 'stretch' }} testID="primary" />
     </View>; }
 
