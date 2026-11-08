@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Pop } from '../../src/ui/motion';
 import { useStore } from '../../src/store';
 import { KURS } from '../../src/data/skin-dict';
 import { T } from '../../src/ui/kit';
@@ -38,7 +39,7 @@ function TabBar({ state, navigation }: { state: { index: number; routes: { name:
         <Pressable testID={'tab-' + it.name} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={it.label}
           onPress={() => go(it.name)}
           style={{ flex: 1, alignItems: 'center', gap: 3, paddingVertical: S.a.tap ? 12 : 8, borderRadius: 24, backgroundColor: on ? c.priSoft : 'transparent' }}>
-          <Ionicons name={on ? it.on : it.off} size={S.a.tap ? 28 : 24} color={on ? c.pri : c.muted} />
+          <Pop on={on}><Ionicons name={on ? it.on : it.off} size={S.a.tap ? 28 : 24} color={on ? c.pri : c.muted} /></Pop>
           <T raw={it.raw} w="b" s={12} c={on ? c.pri : c.muted} center>{it.label}</T>
         </Pressable></React.Fragment>; })}
     </View>

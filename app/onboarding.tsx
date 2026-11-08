@@ -15,7 +15,7 @@ import { STATS } from '../src/data/plus-dict';
 import { track } from '../src/analytics';
 import { Ionicons } from '@expo/vector-icons';
 import { PAINS } from '../src/data/grow-dict';
-import { Bar, Enter, Press, Stagger } from '../src/ui/motion';
+import { Bar, Confetti, Enter, Press, Stagger } from '../src/ui/motion';
 import { CandleChart } from '../src/ui/Chart';
 import { askPush } from '../src/notify';
 
@@ -173,6 +173,7 @@ export default function Onboarding() {
       </>}
       </Stagger></Enter>
     </ScrollView>
+    {step === 9 ? <Confetti key="plan" n={48} /> : null}
     <View style={{ padding: 16, paddingBottom: ins.bottom + 16, gap: 10 }}>
       <Btn testID="next" label={label} disabled={blocked} onPress={step === 8 ? pushYes : next} right={step === 8 ? <Ionicons name="notifications" size={20} color={c.on} /> : undefined} />
       {step === 8 ? <Btn kind="ghost" label="Inte nu" onPress={() => { track('push_later', { from: 'onboarding' }); update(s => { s.grow = s.grow || {}; s.grow.askAt = Date.now(); s.grow.askN = (s.grow.askN || 0) + 1; }); setStep(step + 1); }} /> : null}

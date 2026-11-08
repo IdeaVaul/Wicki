@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from 'react-native';
+import { useWipe } from './motion';
 import Svg, { G, Line, Path, Polyline, Rect, Text as SText } from 'react-native-svg';
 import { arrList, type ArrowStep } from '../data/arrows';
 import { useStore } from '../store';
@@ -44,12 +45,13 @@ export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0,
     else if (a.ma && ma) { const i = cs.length - 1; const av = cs.slice(i - ma + 1, i + 1).reduce((s, x) => s + x.c, 0) / ma; A(pad + i * cw + cw / 2, Y(av) - 3, 'down'); }
   });
   const top = AR.length ? 24 : 0;
-  const [box, setBox] = React.useState({ w: 1, h: 1 });
+  const [box, setBox] = React.useState({ w: 1, h: 1 }); const wipe = useWipe();
   const tap = (e: { nativeEvent: { locationX: number; locationY: number } }) => { if (!onTap) return;
     const x = e.nativeEvent.locationX / box.w * w, y = e.nativeEvent.locationY / box.h * (h + 2 * top) - top;
     const i = Math.max(0, Math.min(cs.length - 1, Math.floor((x - pad) / cw))); const price = hi - (y - pad) / (ph - 2 * pad) * span; onTap(i, price); };
   const main = (
-    <Pressable disabled={!onTap} onPress={tap} onLayout={e => setBox({ w: e.nativeEvent.layout.width || 1, h: e.nativeEvent.layout.height || 1 })} style={{ width: '100%', aspectRatio: w / (h + 2 * top) }}>
+    <Pressable disabled={!onTap} onPress={tap} onLayout={e => { setBox({ w: e.nativeEvent.layout.width || 1, h: e.nativeEvent.layout.height || 1 }); wipe.setW(e.nativeEvent.layout.width); }} style={{ width: '100%', aspectRatio: w / (h + 2 * top) }}>
+      <Animated.View style={{ height: '100%', width: (wipe.width ?? '100%') as any, overflow: 'hidden' }}><View style={{ width: wipe.w || '100%', height: '100%' }}>
       <Svg width="100%" height="100%" viewBox={`0 ${-top} ${w} ${h + 2 * top}`} accessibilityLabel={t('Kursgraf')}>
         {hl ? <Rect x={pad + hl[0] * cw - 2} y={2} width={(hl[1] - hl[0] + 1) * cw + 4} height={ph - 4} rx={8} fill={c.hl} stroke={c.pri} strokeWidth={1.5} strokeDasharray="4 3" /> : null}
         {asLine ? <Polyline points={cs.map((x, i) => `${(pad + i * cw + cw / 2).toFixed(1)},${Y(x.c).toFixed(1)}`).join(' ')} fill="none" stroke={c.pri} strokeWidth={2.6} strokeLinejoin="round" /> : cs.map((x, i) => {
@@ -71,7 +73,7 @@ export function CandleChart({ cs, lines = [], segs = [], asLine = false, ma = 0,
         {vol ? cs.map((x, i) => { const bh = x.v / mv * (h - ph - 6); return <Rect key={'v' + i} x={pad + i * cw + cw * 0.19} y={h - bh} width={bw} height={bh} fill={x.c >= x.o ? c.up : c.down} opacity={0.45} />; }) : null}
         {marks}
         {onSpot ? cs.map((_, i) => <Rect key={'s' + i} x={pad + i * cw} y={0} width={cw} height={ph} fill="transparent" onPress={() => onSpot(i)} />) : null}
-      </Svg>
+      </Svg></View></Animated.View>
     </Pressable>
   );
   if (!rsi) return main;

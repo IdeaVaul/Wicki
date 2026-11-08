@@ -16,7 +16,7 @@ import { Btn, Card, Pill, Row, Sheet, SheetTop, T } from '../../src/ui/kit';
 import { Screen } from '../../src/ui/Header';
 import { PatCard, KidSheet, KidTopic, kidConcept } from '../../src/ui/sheets';
 import { useRefresh } from '../../src/ui/Refresh';
-import { MScroll } from '../../src/ui/motion';
+import { MScroll, Ripple } from '../../src/ui/motion';
 import { Discover } from '../../src/ui/grow';
 
 const KPX = [0.30, 0.38, 0.46, 0.38, 0.30, 0.22, 0.16, 0.22];
@@ -67,6 +67,7 @@ export default function Course() {
         const bg = st === 'done' ? c.pri : big ? c.gold : st === 'plus' ? c.goldSoft : c.lock; const fg = st === 'done' ? c.on : big ? '#5A3B00' : st === 'next' ? c.ink : st === 'plus' ? c.gold : c.lockInk;
         const ic: keyof typeof Ionicons.glyphMap = st === 'done' ? 'checkmark' : st === 'plus' ? 'diamond' : st === 'locked' && n.k !== 'chest' && n.k !== 'test' ? 'lock-closed' : ICON[n.k];
         return <React.Fragment key={n.id}>
+          {big ? <View pointerEvents="none" style={{ position: 'absolute', left: xs[i] - sz / 2, top: ys[i] - sz / 2, width: sz, height: sz, alignItems: 'center', justifyContent: 'center' }}><Ripple size={sz} color={c.gold} /></View> : null}
           <Pressable testID={'node-' + n.id} accessibilityRole="button" accessibilityLabel={t(nodeName(n))} onPress={() => { buzz('tap'); setPop(pop === n.id ? null : n.id); }}
             style={({ pressed }) => ({ position: 'absolute', left: xs[i] - sz / 2, top: ys[i] - sz / 2, width: sz, height: sz, borderRadius: sz / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center',
               borderWidth: big ? 4 : 1, borderColor: big ? '#FFD95C' : st === 'done' ? 'transparent' : c.glassB, transform: [{ scale: pressed ? 0.94 : 1 }],

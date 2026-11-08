@@ -18,7 +18,7 @@ import { speak, hush } from '../src/speech';
 import { LessonVideo } from '../src/ui/LessonVideo';
 import { breakDue } from '../src/session';
 import { track } from '../src/analytics';
-import { Bar, CountUp, Enter, Press, Stagger } from '../src/ui/motion';
+import { Bar, Confetti, CountUp, Enter, FlyUp, Press, Shake, Stagger } from '../src/ui/motion';
 import { Ionicons } from '@expo/vector-icons';
 import { AiSheet } from '../src/ui/online';
 import type { AiReq } from '../src/online';
@@ -165,6 +165,7 @@ export default function Lesson() {
         <Btn kind="ghost" label={(SHT[S.lang] || SHT.sv).btn} testID="share" left={<Ionicons name="share-outline" size={18} color={c.ink} />} onPress={() => { track('result_share', { kind: timed ? 'blitz' : practice ? 'prac' : 'les', n: L.rs!.length }); Share.share({ message: shareText(S.lang, timed ? 'blitz' : practice ? 'prac' : 'les', L.rs!, streakNow(S)) }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />
       </> : <Btn kind="ghost" label="Utmana en kompis" testID="share" onPress={() => { const n = L.ok; const txt = (CHALL[S.lang] || CHALL.sv)(n, timed) + ' ' + SHARE_URL; Share.share({ message: txt }).catch(() => { }); }} style={{ alignSelf: 'stretch' }} />}
       <Btn label="Fortsätt" onPress={leave} style={{ alignSelf: 'stretch' }} testID="primary" />
+      <Confetti n={L.perfect || L.newBest ? 64 : 36} />
     </View>; }
 
   const e = ex!;
@@ -238,13 +239,15 @@ export default function Lesson() {
       </Row>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 10, paddingBottom: 40 }}>
         {showSay && e.t !== 'lvid' ? <Btn kind="ghost" small label="🔊 Läs upp" onPress={() => speak(qText(e), S.lang)} style={{ alignSelf: rtl ? 'flex-end' : 'flex-start' }} /> : null}
-        <Enter key={'ex' + L.i} from="side" dy={rtl ? -16 : 16}>{body()}</Enter>
+        <Enter key={'ex' + L.i} from="side" dy={rtl ? -16 : 16}><Shake k={L.st === 'no' ? 'no' + L.i : null}>{body()}</Shake></Enter>
         {!L.st && !timed && !e.noHint && e.pat && (e.t === 'spot' || e.t === 'mc') ? <Row style={{ alignItems: 'flex-end', marginTop: 6 }} gap={12}>
           <Pressable accessibilityLabel={t('Hjälp mig förstå')} onPress={() => setKid(kidPattern(e.pat!))}><Wick size={e.t === 'spot' ? 80 : 56} /></Pressable>
           <Pressable testID="hint" onPress={() => setKid(kidPattern(e.pat!))} style={{ flex: 1, marginBottom: 24, backgroundColor: c.bub, borderColor: c.bubB, borderWidth: 1, borderRadius: 22, padding: 14 }}>
             <T w="b" s={16.5}>{e.t === 'spot' ? PAT[e.pat!].m : 'Fastnat? Tryck på mig så förklarar jag steg för steg.'}</T></Pressable>
         </Row> : null}
       </ScrollView>
+      <FlyUp k={L.st === 'ok' ? 'ok' + L.i : null} style={{ position: 'absolute', top: ins.top + 70, right: rtl ? undefined : 22, left: rtl ? 22 : undefined, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99, backgroundColor: c.up }}>
+        <T raw w="x" s={16} c={c.on}>{combo >= 2 ? `🔥 ${combo}` : '✓'}</T></FlyUp>
       <View style={{ borderTopWidth: L.st ? 1 : 0, borderColor: ok ? c.bubB : c.down, backgroundColor: L.st ? (ok ? c.upSoft : c.downSoft) : 'transparent', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 16, paddingBottom: ins.bottom + 16, gap: 10 }}>
         {L.st ? <Enter key={'fb' + L.i} dy={22}><Row style={{ alignItems: 'flex-start' }}><Wick mood={ok ? 'cheer' : 'sad'} size={34} lit anim={ok ? 'jump' : 'shake'} />
           <View style={{ flex: 1, gap: 4 }}>

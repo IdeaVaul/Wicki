@@ -9,7 +9,7 @@ import { Wick } from '../src/ui/Wick';
 import { PLUS_ENABLED, TRIAL_DAYS, LADDER, YEAR_KR, cancelPlus, nextStep, periodEnd, plusMonths, plusOn, priceNow, resumePlus, skipMonth, startPlus, tierOf } from '../src/engine/plus';
 import { PL } from '../src/data/plus-dict';
 import { track } from '../src/analytics';
-import { MScroll } from '../src/ui/motion';
+import { Confetti, MScroll } from '../src/ui/motion';
 
 const LOC: Record<string, string> = { sv: 'sv-SE', en: 'en-GB', fr: 'fr-FR', ar: 'ar' };
 
@@ -99,6 +99,7 @@ function PlusScreen() {
     return <View style={{ flex: 1, backgroundColor: c.bg, padding: 24, paddingTop: ins.top + 40, paddingBottom: ins.bottom + 24, justifyContent: 'center', gap: 16 }}>
       <View style={{ alignItems: 'center', gap: 10 }}><Wick size={120} mood="cheer" lit anim="dance" /><T raw w="x" s={28} center>{X.welT}</T><T raw c={c.muted} center>{X.welSub(date(nxt))}</T></View>
       <Btn testID="plus-go" kind="gold" label={X.go} onPress={() => router.back()} />
+      <Confetti n={60} />
     </View>;
   }
   if (sub) {
