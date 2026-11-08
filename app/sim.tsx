@@ -4,9 +4,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../src/store';
-import { Btn, Card, Row, T } from '../src/ui/kit';
+import { Btn, Card, Row, Sheet, SheetTop, T } from '../src/ui/kit';
 import { CandleChart, type Extra } from '../src/ui/Chart';
-import { TOOLS0, bands, fearAt, fearColor, fearLabel, maLine, windowOf, type SimTools } from '../src/engine/simtools';
+import { TOOLS0, heikin, bands, fearAt, fearColor, fearLabel, maLine, windowOf, type SimTools } from '../src/engine/simtools';
 import { Wick } from '../src/ui/Wick';
 import type { ChartLine, SimState } from '../src/types';
 import { kr } from '../src/engine/util';
@@ -14,7 +14,10 @@ import { isMinorAge } from '../src/engine/course';
 import { plusOn, simPlusLock } from '../src/engine/plus';
 import { SIMMK, SIMSTOPS, simClose, simEquity, simF, simGet, simNew, simOpen, simOrder, simPrice, simSeries, simStats, simStep, simUnreal, type MkKey } from '../src/engine/sim';
 import { track } from '../src/analytics';
-import { MScroll } from '../src/ui/motion';
+import { MScroll, Press } from '../src/ui/motion';
+
+/** Runda ikoner för marknaderna i simulatorn. */
+const ASSET: Record<MkKey, { g: string; bg: string; fg: string }> = { stock: { g: 'W', bg: '#2F6BFF', fg: '#fff' }, fx: { g: '€$', bg: '#1F9D6B', fg: '#fff' }, crypto: { g: '₿', bg: '#F7931A', fg: '#fff' }, gold: { g: 'Au', bg: '#D4AF37', fg: '#3A2600' } };
 import { Discover } from '../src/ui/grow';
 import Svg, { Polyline } from 'react-native-svg';
 import { useAccount } from '../src/account/Account';
@@ -80,7 +83,15 @@ export default function Sim() {
       <T w="x" s={30}>Handelssimulator</T>
       <T c={c.muted}>Riskfri träning med låtsaspengar på påhittade grafer.</T>
       {minor ? <Card style={{ padding: 12, borderColor: c.down, backgroundColor: c.downSoft }}><T s={14}>Under 18 handlar du utan hävstång och kan inte blanka. Prop-utmaningen låses upp när du är 18 år.</T></Card> : seg<'free' | 'chal'>([['free', 'Fri träning'], ['chal', plusOn(S) ? 'Prop-utmaning' : '◆ ' + t('Prop-utmaning')]], s.mode, v => { if (v === 'chal' && simPlusLock(S, 'chal')) { router.push({ pathname: '/plus', params: { from: 'sim_prop' } }); return; } setPlay(false); setSide(0); update(x => { simNew(x, s.mk, v); }); }, 'mode')}
-      {seg<MkKey>((Object.keys(SIMMK) as MkKey[]).map(k => [k, simPlusLock(S, k) ? '◆ ' + t(SIMMK[k].n) : SIMMK[k].n]), s.mk, v => { if (simPlusLock(S, v)) { router.push({ pathname: '/plus', params: { from: 'sim_' + v } }); return; } if (p) { say(t('Stäng positionen först.')); return; } setPlay(false); setSide(0); update(x => { simNew(x, v, s.mode); }); }, 'mk')}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingVertical: 4, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+        {(Object.keys(SIMMK) as MkKey[]).map(k => { const on = s.mk === k; const lk = simPlusLock(S, k); const A = ASSET[k];
+          return <Press key={k} testID={'mk-' + k} accessibilityState={{ selected: on }} onPress={() => { buzz('tap'); if (lk) { router.push({ pathname: '/plus', params: { from: 'sim_' + k } }); return; } if (p) { say(t('Stäng positionen först.')); return; } setPlay(false); setSide(0); update(x => { simNew(x, k, s.mode); }); }}
+            style={{ alignItems: 'center', gap: 5, width: 66 }}>
+            <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: A.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: on ? c.pri : 'transparent', opacity: lk ? 0.55 : 1 }}>
+              <T raw w="x" s={A.g.length > 2 ? 15 : 20} c={A.fg}>{A.g}</T>
+              {lk ? <View style={{ position: 'absolute', right: -3, top: -3, width: 20, height: 20, borderRadius: 10, backgroundColor: c.gold, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="diamond" size={11} color="#3A2600" /></View> : null}</View>
+            <T w="b" s={12} c={on ? c.pri : c.muted} center lines={1}>{SIMMK[k].n}</T></Press>; })}
+      </ScrollView>
       {chal ? <Card style={{ gap: 8, padding: 12 }}>
         <Row style={{ justifyContent: 'space-between' }}><T w="b">Prop-utmaning</T><T raw s={12} c={c.muted}>{`${Math.max(0, s.end - s.i)} ${t('ljus kvar')}`}</T></Row>
         <Row><View style={{ width: 120 }}><T s={12} c={c.muted}>Mål +8 %</T></View>{bar((eq - s.start) / (s.start * 0.08) * 100, c.up)}</Row>
@@ -90,6 +101,8 @@ export default function Sim() {
       <SimFear cs={cs} i={s.i} />
       <Card style={{ padding: 8, gap: 8 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, flexDirection: rtl ? 'row-reverse' : 'row' }}>
+          {chip('ct-c', (TL.ct || 'c') === 'c', t('Ljus'), () => setTools(x => { x.ct = 'c'; }))}{chip('ct-l', TL.ct === 'l', t('Linje'), () => setTools(x => { x.ct = 'l'; }))}{chip('ct-ha', TL.ct === 'ha', 'Heikin Ashi', () => setTools(x => { x.ct = 'ha'; }))}
+          <View style={{ width: 1, backgroundColor: c.glassB, marginHorizontal: 2 }} />
           {chip('tf1', TL.tf === 1, '1×', () => setTools(x => { x.tf = 1; }))}{chip('tf5', TL.tf === 5, '5×', () => setTools(x => { x.tf = 5; }))}
           <View style={{ width: 1, backgroundColor: c.glassB, marginHorizontal: 2 }} />
           {chip('ma20', !!TL.ma20, 'MA 20', () => setTools(x => { x.ma20 = !x.ma20; }))}{chip('ma50', !!TL.ma50, 'MA 50', () => setTools(x => { x.ma50 = !x.ma50; }))}
@@ -99,8 +112,9 @@ export default function Sim() {
           {chip('tl', TL.mode === 'tl', '╱ ' + t('Trendlinje'), () => { setTools(x => { x.mode = x.mode === 'tl' ? '' : 'tl'; }); tlA.current = null; })}
           {(TL.lv?.length || TL.tl?.length) ? chip('clr', false, '✕ ' + t('Rensa'), () => { setTools(x => { x.lv = []; x.tl = []; x.mode = ''; }); tlA.current = null; }) : null}
         </ScrollView>
+        {TL.ct === 'ha' ? <T s={12.5} c={c.muted}>Heikin Ashi jämnar ut ljusen så att trenden syns tydligare. Priserna i ljusen är medelvärden, inte de riktiga.</T> : null}
         {TL.mode ? <T s={12.5} c={c.pri} w="b">{TL.mode === 'lv' ? 'Tryck i grafen där nivån ska gå.' : tlA.current ? 'Tryck där linjen ska sluta.' : 'Tryck där linjen ska börja.'}</T> : null}
-        <CandleChart cs={W.vis} lines={[...lines, ...(TL.lv || []).map(y => ({ y, c: 'violet' as const }))]} segs={tlSegs} extra={extra} ma={0} vol={!!TL.vol} rsi={!!TL.rsi} h={200} onTap={TL.mode ? onTap : undefined} />
+        <CandleChart cs={TL.ct === 'ha' ? heikin(W.vis) : W.vis} asLine={TL.ct === 'l'} lines={[...lines, ...(TL.lv || []).map(y => ({ y, c: 'violet' as const }))]} segs={tlSegs} extra={extra} ma={0} vol={!!TL.vol} rsi={!!TL.rsi} h={200} onTap={TL.mode ? onTap : undefined} />
       </Card>
       {msg ? <Card style={{ padding: 10 }}><T raw w="b" s={14} center>{msg}</T></Card> : null}
       {s.res ? <Card style={{ flexDirection: rtl ? 'row-reverse' : 'row', gap: 12, alignItems: 'center', backgroundColor: s.res === 'pass' ? c.upSoft : c.glass }}>
@@ -109,7 +123,8 @@ export default function Sim() {
           <T s={14}>{s.res === 'pass' ? 'Du nådde +8 % utan att bryta förlustgränsen. +50 XP' : s.res === 'fail' ? 'Du tappade 10 %. Så slutar de flesta prop-tester. Minska risken per affär och försök igen.' : 'Du nådde inte målet i tid. Tålamod är bra, men planen måste också ge resultat.'}</T>
           <Btn small label={t('Försök igen')} testID="sim-retry" onPress={() => update(x => { simNew(x, s.mk, 'chal'); })} style={{ alignSelf: rtl ? 'flex-end' : 'flex-start' }} /></View>
       </Card> : null}
-      {o ? <Card style={{ gap: 10 }}>
+      <Sheet visible={!!o} onClose={() => setSide(0)}>{o ? <View style={{ gap: 10 }}>
+        <SheetTop title={t(o.side > 0 ? 'Köp' : 'Blanka') + ' ' + M.sym} onClose={() => setSide(0)} />
         <T w="b" s={14}>Risk per affär</T>{seg<number>([[0.5, '0,5 %'], [1, '1 %'], [2, '2 %']], s.risk, v => update(x => { simGet(x).risk = v; }), 'risk')}
         <T w="b" s={14}>Stoppavstånd</T>{seg<number>(SIMSTOPS, s.sm, v => update(x => { simGet(x).sm = v; }), 'sm')}
         <T w="b" s={14}>Vinstmål</T>{seg<number>([[0, 'Inget'], [1, '1R'], [2, '2R'], [3, '3R']], s.tp, v => update(x => { simGet(x).tp = v; }), 'tp')}
@@ -124,10 +139,10 @@ export default function Sim() {
         <Row><Btn label={t(o.side > 0 ? 'Bekräfta köp' : 'Bekräfta blankning')} kind={o.side > 0 ? 'good' : 'bad'} disabled={o.qty <= 0} testID="sim-confirm" style={{ flex: 1 }}
           onPress={() => { const sd = o.side as 1 | -1; track('sim_trade', { mk: s.mk, mode: s.mode, side: sd }); update(x => { simOpen(simGet(x), sd, minor); }); setSide(0); buzz('tap'); }} />
           <Btn label={t('Avbryt')} kind="ghost" testID="sim-cancel" onPress={() => setSide(0)} /></Row>
-      </Card> : null}
+      </View> : null}</Sheet>
       {s.res ? null : <View style={{ flexDirection: rtl ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: 8 }}>
         {p ? <Btn label={t('Stäng nu')} kind="bad" testID="sim-close" style={{ flexGrow: 1 }} onPress={() => { let tr: any = null; update(x => { const ss = simGet(x); tr = simClose(x, ss, simPrice(ss), 'Stängd'); }); setTimeout(() => fb(tr), 0); }} />
-          : side ? null : <><Btn label={t('Köp')} kind="good" testID="sim-buy" style={{ flexGrow: 1 }} onPress={() => setSide(1)} />{minor ? null : <Btn label={t('Blanka')} kind="bad" testID="sim-short" style={{ flexGrow: 1 }} onPress={() => setSide(-1)} />}</>}
+          : side ? null : <>{minor ? null : <Btn label={t('Blanka')} kind="bad" testID="sim-short" style={{ flexGrow: 1, flexBasis: '40%' }} left={<Ionicons name="trending-down" size={20} color="#fff" />} onPress={() => setSide(-1)} />}<Btn label={t('Köp')} kind="good" testID="sim-buy" style={{ flexGrow: 1, flexBasis: '40%' }} left={<Ionicons name="trending-up" size={20} color="#fff" />} onPress={() => setSide(1)} /></>}
         <Btn small label={t(play ? 'Pausa' : 'Spela')} kind="ghost" testID="sim-play" onPress={() => setPlay(v => !v)} style={{ flexGrow: 1 }} />
         <Btn small label={t('Nästa ljus')} kind="ghost" testID="sim-step" onPress={() => step(1)} style={{ flexGrow: 1 }} />
         <Btn small label="+10" kind="ghost" testID="sim-step10" onPress={() => step(10)} style={{ flexGrow: 1 }} />

@@ -1,5 +1,15 @@
 /** Översättningar för veckoliga, vänner, Fråga Wicki (AI) och marknadsdata. [svenska, engelska, franska, arabiska] */
 const ROWS: [string, string, string, string][] = [
+  ['Ljus', 'Candles', 'Bougies', 'شموع'],
+  ['Linje', 'Line', 'Ligne', 'خط'],
+  ['Heikin Ashi jämnar ut ljusen så att trenden syns tydligare. Priserna i ljusen är medelvärden, inte de riktiga.', 'Heikin Ashi smooths the candles so the trend is easier to see. The prices in the candles are averages, not the real ones.', 'Heikin Ashi lisse les bougies pour mieux voir la tendance. Les prix des bougies sont des moyennes, pas les vrais prix.', 'تنعّم Heikin Ashi الشموع ليظهر الاتجاه بوضوح أكبر. الأسعار في الشموع متوسطات وليست الأسعار الحقيقية.'],
+  ['Vilka marknader är du mest intresserad av?', 'Which markets are you most interested in?', 'Quels marchés t’intéressent le plus ?', 'ما الأسواق التي تهمك أكثر؟'],
+  ['Välj allt som stämmer.', 'Choose all that apply.', 'Choisis tout ce qui s’applique.', 'اختر كل ما ينطبق.'],
+  ['Aktier', 'Stocks', 'Actions', 'الأسهم'],
+  ['Valutor (forex)', 'Currencies (forex)', 'Devises (forex)', 'العملات (فوركس)'],
+  ['Krypto', 'Crypto', 'Crypto', 'العملات المشفرة'],
+  ['Råvaror', 'Commodities', 'Matières premières', 'السلع'],
+  ['Veckans vinnare koras om', 'This week’s winners are crowned in', 'Les gagnants de la semaine seront couronnés dans', 'يُتوَّج فائزو هذا الأسبوع خلال'],
   ['Tradingjournal', 'Trading journal', 'Journal de trading', 'سجل التداول'],
   ['Saldo', 'Balance', 'Solde', 'الرصيد'],
   ['Avkastning', 'Return', 'Rendement', 'العائد'],

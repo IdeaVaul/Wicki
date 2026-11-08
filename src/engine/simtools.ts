@@ -1,10 +1,15 @@
 import type { Candle } from '../types';
 
 /** Diagramverktyg i simulatorn: tidsram, indikatorer, ritningar och rädslomätaren. */
-export type SimTools = { ma20?: boolean; ma50?: boolean; bb?: boolean; vol?: boolean; rsi?: boolean; tf?: 1 | 5; mode?: '' | 'lv' | 'tl';
+export type SimTools = { ma20?: boolean; ma50?: boolean; bb?: boolean; vol?: boolean; rsi?: boolean; tf?: 1 | 5; mode?: '' | 'lv' | 'tl'; ct?: 'c' | 'l' | 'ha';
   lv?: number[]; tl?: [number, number, number, number][] };
 export const TOOLS0: SimTools = { ma20: true, vol: true, tf: 1, mode: '', lv: [], tl: [] };
 
+/** Heikin Ashi: utjämnade ljus som gör trenden lättare att se (används av många tradingappar). */
+export function heikin(cs: Candle[]): Candle[] {
+  const out: Candle[] = []; cs.forEach((x, i) => { const c = (x.o + x.h + x.l + x.c) / 4; const o = i ? (out[i - 1].o + out[i - 1].c) / 2 : (x.o + x.c) / 2;
+    out.push({ ...x, o, c, h: Math.max(x.h, o, c), l: Math.min(x.l, o, c) }); }); return out;
+}
 /** Slå ihop tf ljus till ett (t.ex. 5 småljus = ett större). */
 export function aggregate(cs: Candle[], tf: number): Candle[] {
   if (tf <= 1) return cs; const out: Candle[] = [];

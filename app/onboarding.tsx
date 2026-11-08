@@ -18,13 +18,19 @@ import { PAINS } from '../src/data/grow-dict';
 import { Bar, Confetti, Enter, Press, Stagger } from '../src/ui/motion';
 import { CandleChart } from '../src/ui/Chart';
 import { askPush } from '../src/notify';
+import { simNew } from '../src/engine/sim';
+import { simPlusLock } from '../src/engine/plus';
 
 /** Introduktionen, inspirerad av Brilliant: Wicki presenterar sig som coach, frågar en sak i taget med stora valkort,
  *  låter dig lösa en riktig uppgift direkt, föreslår en tid för påminnelser och visar sedan din plan. Konto behövs inte. */
-const LAST = 10;
+const LAST = 11;
 const MOTIVES = [
   { id: 'understand', icon: 'library', l: 'Förstå börsen' }, { id: 'invest', icon: 'trending-up', l: 'Börja investera' },
   { id: 'trade', icon: 'pulse', l: 'Lära mig trading' }, { id: 'safe', icon: 'shield-checkmark', l: 'Skydda mina pengar' },
+] as const;
+const MARKETS = [
+  { id: 'stock', g: 'W', bg: '#2F6BFF', fg: '#fff', l: 'Aktier' }, { id: 'fx', g: '€$', bg: '#1F9D6B', fg: '#fff', l: 'Valutor (forex)' },
+  { id: 'crypto', g: '₿', bg: '#F7931A', fg: '#fff', l: 'Krypto' }, { id: 'gold', g: 'Au', bg: '#D4AF37', fg: '#3A2600', l: 'Råvaror' },
 ] as const;
 const TIMES = [
   { h: 8, icon: 'partly-sunny', l: 'På morgonen' }, { h: 12, icon: 'sunny', l: 'På lunchen' },
@@ -62,7 +68,7 @@ export default function Onboarding() {
   // Loggar man in med ett befintligt konto hämtas framstegen och introduktionen hoppas över.
   useEffect(() => { if (acc.email && S.onb) router.replace('/'); }, [acc.email, S.onb]);
   const [step, setStep] = useState(0); const [level, setLevel] = useState(0); const [goal, setGoal] = useState(20); const [pains, setPains] = useState<string[]>([]);
-  const [motive, setMotive] = useState<string | null>(null); const [hour, setHour] = useState<number | null>(null); const [taste, setTaste] = useState<'up' | 'down' | null>(null);
+  const [motive, setMotive] = useState<string | null>(null); const [mks, setMks] = useState<string[]>([]); const [hour, setHour] = useState<number | null>(null); const [taste, setTaste] = useState<'up' | 'down' | null>(null);
   const dreams = (pains.length ? PAINS.filter(p => pains.includes(p.id)) : PAINS.filter(p => ['start', 'charts', 'lose'].includes(p.id)));
   // En tydlig upptrend med högre toppar och bottnar för smakprovet.
   const trend = useMemo(() => { const n = [0.6, -0.4, 1.1, 0.2, -0.7, 1.4, 0.5, -0.3, 1.2, 0.8, -0.5, 1.6, 0.4, -0.2, 1.3, 0.9, -0.6, 1.5];
@@ -81,7 +87,9 @@ export default function Onboarding() {
   const finish = () => {
     const skip = [0, SECTIONS[1]?.from || 0, (SECTIONS.find(x => x.t === 'Strategier') || SECTIONS[4])?.from || 0];
     track('onboarding_done', { level, goal, stats: !!S.stats, pains: pains.join(','), motive: motive || 'none', hour: hour ?? -1, taste: taste || 'none' });
-    update(s => { s.goal = goal; s.grow = { ...(s.grow || {}), pains, motive: motive || undefined, ...(hour != null ? { hour } : {}) }; if (level < 3) UNITS.slice(0, skip[level]).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); s.onb = true; });
+    update(s => { s.goal = goal; s.grow = { ...(s.grow || {}), pains, markets: mks, motive: motive || undefined, ...(hour != null ? { hour } : {}) }; if (level < 3) UNITS.slice(0, skip[level]).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); s.onb = true;
+      // Simulatorn startar på den marknad man är mest intresserad av.
+      const mk = mks.find(k => !simPlusLock(s, k as any)); if (mk) simNew(s, mk as any, 'free'); });
     // Först till flikarna, sedan nästa steg ovanpå, så att Tillbaka alltid landar på Hem.
     router.replace('/');
     if (level === 3) setTimeout(() => router.push({ pathname: '/lesson', params: { mode: 'placement' } }), 60);
@@ -89,8 +97,8 @@ export default function Onboarding() {
   };
   const next = () => {
     buzz('tap');
-    if (step === 1) track('onboarding_motive', { motive: motive || 'none' });
-    if (step === 2) track('onboarding_pains', { pains: pains.join(',') || 'none' });
+    if (step === 1) track('onboarding_motive', { motive: motive || 'none' }); if (step === 2) track('onboarding_markets', { markets: mks.join(',') || 'none' });
+    if (step === 3) track('onboarding_pains', { pains: pains.join(',') || 'none' });
     if (step < LAST) { setStep(step + 1); return; } finish();
   };
   const pushYes = async () => {
@@ -98,8 +106,8 @@ export default function Onboarding() {
     update(s => { s.grow = s.grow || {}; s.grow.push = ok; s.grow.hour = hour ?? 18; s.grow.askAt = Date.now(); s.grow.askN = (s.grow.askN || 0) + 1; });
     track(ok ? 'push_on' : 'push_denied', { hour: hour ?? 18, from: 'onboarding' }); if (ok) buzz('done'); setStep(step + 1);
   };
-  const blocked = (step === 1 && !motive) || (step === 5 && !taste) || (step === 7 && hour == null);
-  const label = step === 0 ? 'Kom igång' : step === 8 ? 'Slå på påminnelser' : step === LAST ? 'Nu kör vi' : 'Fortsätt';
+  const blocked = (step === 1 && !motive) || (step === 6 && !taste) || (step === 8 && hour == null);
+  const label = step === 0 ? 'Kom igång' : step === 9 ? 'Slå på påminnelser' : step === LAST ? 'Nu kör vi' : 'Fortsätt';
   return <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: ins.top + 8 }}>
     <Row style={{ paddingHorizontal: 16 }}>
       {step ? <Pressable accessibilityLabel={t('Tillbaka')} onPress={() => setStep(step - 1)} style={{ width: 36 }}><Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={26} color={c.lockInk} /></Pressable> : <View style={{ width: 36 }} />}
@@ -117,17 +125,21 @@ export default function Onboarding() {
         <Ask q="Vad vill du uppnå?" sub="Wicki anpassar lektionerna efter det." />
         {grid(MOTIVES.map(m => tile(motive === m.id, () => setMotive(m.id), m.l, icon(m.icon, motive === m.id), 'motive-' + m.id)))}
       </> : step === 2 ? <>
+        <Ask q="Vilka marknader är du mest intresserad av?" sub="Välj allt som stämmer." />
+        {grid(MARKETS.map(m => { const on = mks.includes(m.id); return tile(on, () => setMks(on ? mks.filter(x => x !== m.id) : [...mks, m.id]), m.l,
+          <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: m.bg, alignItems: 'center', justifyContent: 'center' }}><T raw w="x" s={m.g.length > 2 ? 15 : 20} c={m.fg}>{m.g}</T></View>, 'mkt-' + m.id); }))}
+      </> : step === 3 ? <>
         <Ask q="Vad är svårast med trading just nu?" sub="Välj allt som stämmer. Wicki bygger din plan efter det." />
         {grid(PAINS.map(p => { const on = pains.includes(p.id); return tile(on, () => setPains(on ? pains.filter(x => x !== p.id) : [...pains, p.id]), p.pain, icon(p.icon, on), 'pain-' + p.id); }))}
-      </> : step === 3 ? <>
+      </> : step === 4 ? <>
         <Ask q="Hur gammal är du?" sub="Wicki anpassar råden efter din ålder. Svaret sparas bara i appen." />
         {([['u16', 'Under 16 år'], ['u18', '16–17 år'], ['y', '18–25 år'], ['o', 'Över 25 år'], ['', 'Vill inte säga']] as const).map(([k, a]) => choice((S.age || '') === k, () => update(s => { s.age = k; }), a, '', 'age-' + (k || 'none')))}
         {S.age === 'u16' ? <Card style={{ borderColor: c.gold, backgroundColor: c.goldSoft }}><T w="x">Bra att du är nyfiken!</T><T>Wicki är gjord för dig som är 16 eller äldre. Använd den gärna tillsammans med en vuxen. Lektionerna om högriskprodukter låses upp när du fyller 18.</T></Card>
           : S.age === 'u18' ? <Card style={{ borderColor: c.gold, backgroundColor: c.goldSoft }}><T w="x">Bra att veta</T><T>Du som är 16 eller 17 får själv bestämma över pengar du tjänat på eget jobb. För att öppna konto hos en bank eller mäklare behövs oftast dina vårdnadshavare. Lektionerna om högriskprodukter låses upp när du fyller 18.</T></Card> : null}
-      </> : step === 4 ? <>
+      </> : step === 5 ? <>
         <Ask q="Hur mycket kan du redan?" />
         {grid(LEVELS.map(([a, b], k) => tile(level === k, () => setLevel(k), a, <MiniCandles k={k} on={level === k} />, 'lv-' + k, t(b))))}
-      </> : step === 5 ? <>
+      </> : step === 6 ? <>
         <Ask q="Låt oss testa direkt!" sub="Går priset upp eller ner i den här grafen?" mood={taste === 'up' ? 'cheer' : 'happy'} />
         <Card style={{ padding: 10 }}><CandleChart cs={trend} h={190} pad={8} /></Card>
         <Row gap={10}>
@@ -139,13 +151,13 @@ export default function Onboarding() {
         {taste ? <Enter from="scale"><Card style={{ gap: 6, borderColor: taste === 'up' ? c.up : c.gold, backgroundColor: taste === 'up' ? c.upSoft : c.goldSoft }}>
           <T w="x">{taste === 'up' ? 'Snyggt! Du läste just din första graf.' : 'Nästan! Titta på bottnarna.'}</T>
           <T s={14}>{taste === 'up' ? 'Högre toppar och högre bottnar betyder att trenden går uppåt.' : 'De blir högre och högre. Det betyder att trenden går uppåt.'}</T></Card></Enter> : null}
-      </> : step === 6 ? <>
+      </> : step === 7 ? <>
         <Ask q="Välj ett dagligt mål" sub="Du kan ändra det när som helst." />
         {grid(GOALS.map(([g, l, ic]) => tile(goal === g, () => setGoal(g), l, icon(ic, goal === g), 'goal-' + g, `${g} XP · ${t('ca')} ${Math.round(g / 4)} min`)))}
-      </> : step === 7 ? <>
+      </> : step === 8 ? <>
         <Ask q="När passar det att lära dig?" sub="Wicki påminner dig vid rätt tid." />
         {grid(TIMES.map(x => tile(hour === x.h, () => setHour(x.h), x.l, icon(x.icon, hour === x.h, x.icon === 'moon' ? c.gold : undefined), 'time-' + x.h)))}
-      </> : step === 8 ? <>
+      </> : step === 9 ? <>
         <Enter from="scale" style={{ alignItems: 'center', paddingTop: 20 }}><Wick mood="cheer" size={110} lit anim="jump" /></Enter>
         <Card style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, padding: 14 }}>
           <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: c.pri, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="flame" size={22} color={c.on} /></View>
@@ -153,7 +165,7 @@ export default function Onboarding() {
         </Card>
         <T w="x" s={24} center>Nå ditt mål med påminnelser</T>
         <T center c={c.muted}>En kort påminnelse om dagen hjälper dig att hålla svitlågan vid liv. Högst en om dagen.</T>
-      </> : step === 9 ? <>
+      </> : step === 10 ? <>
         <Enter from="scale" style={{ alignItems: 'center' }}><Wick mood="cheer" size={110} lit anim="dance" /></Enter>
         <T w="x" s={26} center>Din plan är klar</T>
         <T w="b" s={17} center c={c.muted}>Om 30 dagar kan du:</T>
@@ -173,10 +185,10 @@ export default function Onboarding() {
       </>}
       </Stagger></Enter>
     </ScrollView>
-    {step === 9 ? <Confetti key="plan" n={48} /> : null}
+    {step === 10 ? <Confetti key="plan" n={48} /> : null}
     <View style={{ padding: 16, paddingBottom: ins.bottom + 16, gap: 10 }}>
-      <Btn testID="next" label={label} disabled={blocked} onPress={step === 8 ? pushYes : next} right={step === 8 ? <Ionicons name="notifications" size={20} color={c.on} /> : undefined} />
-      {step === 8 ? <Btn kind="ghost" label="Inte nu" onPress={() => { track('push_later', { from: 'onboarding' }); update(s => { s.grow = s.grow || {}; s.grow.askAt = Date.now(); s.grow.askN = (s.grow.askN || 0) + 1; }); setStep(step + 1); }} /> : null}
+      <Btn testID="next" label={label} disabled={blocked} onPress={step === 9 ? pushYes : next} right={step === 9 ? <Ionicons name="notifications" size={20} color={c.on} /> : undefined} />
+      {step === 9 ? <Btn kind="ghost" label="Inte nu" onPress={() => { track('push_later', { from: 'onboarding' }); update(s => { s.grow = s.grow || {}; s.grow.askAt = Date.now(); s.grow.askN = (s.grow.askN || 0) + 1; }); setStep(step + 1); }} /> : null}
       {step === 0 && !acc.email ? <Pressable testID="have-account" onPress={() => router.push('/auth')} style={{ paddingTop: 4 }}><T w="b" c={c.pri} center>Har du redan ett konto? Logga in</T></Pressable> : null}
     </View>
   </View>;

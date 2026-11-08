@@ -22,8 +22,10 @@ function Spark({ cs, up, w = 84, h = 30 }: { cs: number[][]; up: boolean; w?: nu
 const fmt = (p: number) => p >= 1000 ? Math.round(p).toLocaleString('sv-SE') : p >= 10 ? p.toFixed(2) : p.toFixed(4);
 
 export function MarketCard() {
-  const { c, t, rtl } = useStore(); const [q, setQ] = useState<Quote[] | null>(null); const [err, setErr] = useState(false); const [open, setOpen] = useState<Quote | null>(null);
-  useEffect(() => { let on = true; quotes().then(v => { if (!on) return; if (v && v.length) setQ(v); else setErr(true); }); return () => { on = false; }; }, []);
+  const { S, c, t, rtl } = useStore(); const [q, setQ] = useState<Quote[] | null>(null); const [err, setErr] = useState(false); const [open, setOpen] = useState<Quote | null>(null);
+  // Ordningen följer de marknader man valde i introduktionen.
+  const pref = S.grow?.markets || []; const ids = pref.includes('fx') && !pref.includes('crypto') ? 'eurusd,eursek,btc,eth,sol' : 'btc,eth,sol,eurusd,eursek';
+  useEffect(() => { let on = true; quotes(ids).then(v => { if (!on) return; if (v && v.length) setQ(v); else setErr(true); }); return () => { on = false; }; }, []);
   if (err) return null;
   return <Card testID="market" style={{ gap: 10 }}>
     <Row style={{ justifyContent: 'space-between' }}><Row gap={6}><Ionicons name="pulse" size={18} color={c.pri} /><T w="x" s={17}>Marknaden nu</T></Row>

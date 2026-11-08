@@ -26,7 +26,10 @@ export default function League() {
     await pushWeekXP(acc.uid, weekXP(S)).catch(() => { }); setData(await league(acc.uid).catch(() => ({ top: [], friends: [], myPlace: null }))); setFeed(await friendTrades(acc.uid).catch(() => []));
   }, [acc.uid]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(); track('league_open'); }, [load]);
-  const days = 7 - ((new Date().getDay() + 6) % 7);
+  // Nedräkning till måndag 00:00, då veckans vinnare koras.
+  const [now, setNow] = useState(Date.now()); useEffect(() => { const id = setInterval(() => setNow(Date.now()), 30e3); return () => clearInterval(id); }, []);
+  const left = (() => { const e = new Date(now); e.setHours(24, 0, 0, 0); e.setDate(e.getDate() + (7 - ((new Date(now).getDay() + 6) % 7)) - 1); const ms = Math.max(0, e.getTime() - now);
+    return `${Math.floor(ms / 864e5)} d ${Math.floor(ms / 36e5) % 24} h ${Math.floor(ms / 6e4) % 60} min`; })();
 
   const back = <Pressable accessibilityLabel={t('Tillbaka')} onPress={() => router.back()} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: c.glass, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}>
     <Ionicons name={rtl ? 'chevron-forward' : 'chevron-back'} size={22} color={c.ink} /></Pressable>;
@@ -40,6 +43,20 @@ export default function League() {
   </View>;
 
   const list = tab === 'all' ? data?.top : data?.friends;
+  /** Pallen: topp tre med störst i mitten, som i tradingspelens topplistor. */
+  const podium = (rs: Rank[]) => { const order = [rs[1], rs[0], rs[2]].filter(Boolean) as Rank[];
+    return <Card style={{ gap: 6, paddingTop: 18 }}><View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 10 }}>
+      {order.map(r => { const place = rs.indexOf(r); const big = place === 0; const col = [c.gold, '#C0C7D1', '#CD7F32'][place];
+        return <Enter key={r.user_id} from="scale" delay={place === 0 ? 300 : place === 1 ? 150 : 450}><View style={{ alignItems: 'center', gap: 6, width: big ? 110 : 92 }}>
+          {big ? <T raw s={22}>👑</T> : null}
+          <View style={{ width: big ? 74 : 58, height: big ? 74 : 58, borderRadius: 40, backgroundColor: r.me ? c.pri : c.surface, borderWidth: 3, borderColor: col, alignItems: 'center', justifyContent: 'center' }}>
+            <T raw w="x" s={big ? 28 : 22} c={r.me ? c.on : c.ink}>{r.name.slice(0, 1).toUpperCase()}</T>
+            <View style={{ position: 'absolute', bottom: -9, width: 22, height: 22, borderRadius: 11, backgroundColor: col, alignItems: 'center', justifyContent: 'center' }}><T raw w="x" s={12} c="#1A1A1A">{String(place + 1)}</T></View></View>
+          <T raw w="b" s={13.5} lines={1} center style={{ marginTop: 6 }}>{r.me ? `${r.name} (${t('du')})` : r.name}</T>
+          <T raw w="x" s={13} c={c.gold}>{`${r.xp} XP`}</T>
+          <View style={{ width: '100%', height: big ? 46 : place === 1 ? 32 : 22, borderTopLeftRadius: 10, borderTopRightRadius: 10, backgroundColor: col, opacity: 0.35 }} />
+        </View></Enter>; })}
+    </View></Card>; };
   const row = (r: Rank, i: number) => <Enter key={r.user_id} delay={Math.min(i, 12) * 40}><View style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16,
     backgroundColor: r.me ? c.priSoft : c.glass, borderWidth: 1, borderColor: r.me ? c.pri : c.glassB }}>
     <T raw w="x" s={16} c={i < 3 ? c.gold : c.muted} style={{ width: 28 }} center>{i < 3 ? ['🥇', '🥈', '🥉'][i] : String(i + 1)}</T>
@@ -51,7 +68,7 @@ export default function League() {
 
   return <View style={{ flex: 1, backgroundColor: c.bg }}>
     <MScroll contentContainerStyle={{ paddingTop: ins.top + 8, paddingHorizontal: 16, paddingBottom: ins.bottom + 40, gap: 12 }}>
-      <Row>{back}<View style={{ flex: 1 }}><T w="x" s={26}>Veckoligan</T><T raw s={13} c={c.muted}>{`${t('Börjar om om')} ${days} ${t(days === 1 ? 'dag' : 'dagar')}`}</T></View></Row>
+      <Row>{back}<View style={{ flex: 1 }}><T w="x" s={26}>Veckoligan</T><T raw s={13} c={c.muted}>{`${t('Veckans vinnare koras om')} ${left}`}</T></View></Row>
       <Card style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 12 }}><Wick size={56} lit mood="cheer" />
         <View style={{ flex: 1 }}><T raw w="x" s={22} c={c.gold}>{`${weekXP(S)} XP`}</T><T s={13} c={c.muted}>Din XP den här veckan</T>
           {data?.myPlace ? <T raw w="b" s={14}>{`${t('Plats')} ${data.myPlace}`}</T> : null}</View></Card>
@@ -65,7 +82,7 @@ export default function League() {
         {me ? <Row style={{ justifyContent: 'space-between' }}><View><T s={13} c={c.muted}>Din vänkod</T><T raw w="x" s={22} style={{ letterSpacing: 3 }}>{me.code}</T></View>
           <Btn small kind="ghost" label="Dela" left={<Ionicons name="share-outline" size={18} color={c.ink} />} onPress={() => { track('friend_share'); Share.share({ message: t('Tävla mot mig i Wicki! Min vänkod är') + ' ' + me.code }).catch(() => { }); }} /></Row> : null}
       </Card> : null}
-      {!data ? <ActivityIndicator color={c.pri} /> : list && list.length ? list.map(row)
+      {!data ? <ActivityIndicator color={c.pri} /> : list && list.length ? <>{list.length >= 3 ? podium(list) : null}{(list.length >= 3 ? list.slice(3) : list).map((r, i) => row(r, list.length >= 3 ? i + 3 : i))}</>
         : <Card><T c={c.muted} center>{tab === 'all' ? 'Ingen har samlat XP den här veckan än. Bli först!' : 'Lägg till vänner med deras vänkod för att tävla mot dem.'}</T></Card>}
       {tab === 'friends' ? <>
         <T w="x" s={20} style={{ marginTop: 8 }}>Vännernas trades</T>
