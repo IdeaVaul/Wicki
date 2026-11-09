@@ -6,7 +6,8 @@ import { useStore } from '../src/store';
 import type { Ex, PathNode } from '../src/types';
 import { NODE, UNITS } from '../src/engine/course';
 import { adaptQ, buildReal, buildBlitz, buildScam, buildVidQuiz, buildHunt, buildLesson, buildNext, buildPatPractice, buildPlacement, buildPractice, buildReview } from '../src/engine/exercises';
-import { Q, addXP, dueKeys, heartsNow, loseHeart, nextHeartMin, srsMark, streakNow, touchStreak } from '../src/engine/state';
+import { Q, addXP, dueKeys, heartsNow, loseHeart, nextHeartMin, srsMark, streakNow } from '../src/engine/state';
+import { lessonDone } from '../src/engine/streak';
 import { pick, shuffle } from '../src/engine/util';
 import { figSpec } from '../src/engine/charts';
 import { PAT } from '../src/data/patterns';
@@ -28,7 +29,7 @@ type LS = { lvEnd?: boolean; tp?: number | null; num?: string;
   q: Ex[]; i: number; st: null | 'ok' | 'no'; sel: string | number | null; arr: number[];
   m: { sa: number | null; sb: number | null; done: number[]; err: [number, number] | null; bad: boolean };
   mist: number; ok: number; start: number; retried: number[]; phase: 'ex' | 'end' | 'nohearts';
-  msg: string; rs?: number[]; end?: number; place: Record<number, { ok: number; n: number }>; plPass?: number; xp?: number; perfect?: boolean; time?: number; newBest?: boolean; quit?: boolean;
+  msg: string; rs?: number[]; sr?: { mile?: number; repaired?: boolean; freeze?: boolean }; end?: number; place: Record<number, { ok: number; n: number }>; plPass?: number; xp?: number; perfect?: boolean; time?: number; newBest?: boolean; quit?: boolean;
 };
 const SHARE_URL = 'https://claude.ai/artifact/FmvoZUXVTXHB6vpJFhZVBe';
 const CHALL: Record<string, (n: number, b: boolean) => string> = {
@@ -122,11 +123,12 @@ export default function Lesson() {
     if (timed) xp = Math.min(25, l.ok); else if (practice) xp = 10; else if (node && S.done[node.id]) xp = 5 + (perfect ? 5 : 0); else xp = (node?.k === 'test' ? 20 : 10) + (perfect ? 5 : 0);
     let pass = 0; if (placement) { for (let u = 0; u < 5; u++) { const r = l.place[u]; if (r && r.n && r.ok >= Math.max(1, r.n - 1)) pass++; else break; } }
     const newBest = timed && l.ok > (S.best60 || 0);
+    const sr = lessonDone(JSON.parse(JSON.stringify(S))); // samma beräkning som i update nedan, för slutskärmen
     track('lesson_done', { mode, unit: node?.u, kind: node?.k, perfect, mistakes: l.mist, xp, secs: Math.round((Date.now() - l.start) / 1000) });
     update(s => { if (node) s.done[node.id] = 1; if (practice && mode !== 'vquiz') { s.grow = s.grow || {}; s.grow.ck = { ...(s.grow.ck || {}), review: 1 }; } addXP(s, xp); s.lessons++; Q(s).lessons++; if (perfect && !timed) s.perfect++; if (practice) { heartsNow(s); s.hearts = Math.min(5, s.hearts + 1); }
-      if (newBest) s.best60 = l.ok; if (placement) UNITS.slice(0, pass).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); touchStreak(s); });
+      if (newBest) s.best60 = l.ok; if (placement) UNITS.slice(0, pass).forEach(u => u.nodes.forEach(n => { s.done[n.id] = 1; })); lessonDone(s); });
     buzz('done');
-    return { ...l, phase: 'end', xp, perfect, time: Date.now() - l.start, plPass: placement ? pass : undefined, newBest };
+    return { ...l, sr, phase: 'end', xp, perfect, time: Date.now() - l.start, plPass: placement ? pass : undefined, newBest };
   }
   function advance() {
     const prev = Lref.current; if (!prev || prev.phase !== 'ex') return;
@@ -158,6 +160,10 @@ export default function Lesson() {
         <Enter from="scale"><Wick mood="cheer" size={120} lit anim="dance" /></Enter><T w="x" s={28} c={c.gold} center>{title}</T>
         {S.a.focus ? null : <Row style={{ alignSelf: 'stretch' }}><CountUp to={L.xp || 0} render={n => tile('TOTAL XP', '⚡' + n, c.gold)} /><CountUp to={acc} render={n => tile('PRECISION', n + '%', c.up)} />{timed ? tile('RÄTT', String(L.ok), c.pri) : tile('TID', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`, c.pri)}</Row>}
         {placement ? <T w="x" s={17} center>{L.plPass ? `Du börjar på enhet ${L.plPass + 1}: ${t(UNITS[Math.min(L.plPass, UNITS.length - 1)].title)}` : 'Du börjar från början. Det är helt rätt ställe!'}</T> : null}
+        {L.sr?.mile || L.sr?.repaired ? <Enter from="scale"><View style={{ alignSelf: 'stretch', borderRadius: 18, padding: 14, gap: 4, backgroundColor: c.goldSoft, borderWidth: 1, borderColor: c.gold, alignItems: 'center' }}>
+          <T raw w="x" s={20} c={c.gold} center>{L.sr.repaired ? `🔥 ${t('Svitten är lagad!')}` : `🔥 ${L.sr.mile} ${t('dagar i rad!')}`}</T>
+          {L.sr.freeze ? <T w="b" s={14} center>🧊 Du fick ett svitskydd</T> : <T s={14} c={c.muted} center>Ny milstolpe. Fortsätt så!</T>}</View></Enter>
+          : L.sr?.freeze ? <T w="b" s={14} center>🧊 Du fick ett svitskydd</T> : null}
         <T center c={c.muted}>Lite varje dag slår mycket ibland. Det gäller både lärande och trading.</T>
       </Stagger></View>
       {placement ? null : L.rs && L.rs.length >= 3 ? <>

@@ -102,10 +102,11 @@ export const PAINS: { id: string; icon: string; pain: string; dream: string; whe
 ];
 
 /** Påminnelsetexter. Varje funktion får det som gör påminnelsen personlig. */
-type NT = { streak: (n: number) => [string, string]; review: (n: number) => [string, string]; next: (l: string) => [string, string]; video: (v: string) => [string, string];
+type NT = { streak: (n: number) => [string, string]; saver: (n: number) => [string, string]; review: (n: number) => [string, string]; next: (l: string) => [string, string]; video: (v: string) => [string, string];
   sim: () => [string, string]; start: () => [string, string]; miss: () => [string, string]; last: () => [string, string] };
 export const NTXT: Record<string, NT> = {
   sv: {
+    saver: n => [`🔥 Din svit på ${n} dagar slocknar vid midnatt`, 'Rädda den med en lektion på 3 minuter innan dagen är slut.'],
     streak: n => [`🔥 ${n} dagar i rad står på spel`, 'En lektion på 3 minuter räcker för att hålla svitlågan vid liv.'],
     review: n => [`🧠 ${n} begrepp är redo att repeteras`, 'Repetera nu, innan de hinner glömmas bort. Tar 2 minuter.'],
     next: l => ['🕯️ Nästa lektion väntar', `${l} Fyra minuter, sedan är du ett steg närmare din plan.`],
@@ -116,6 +117,7 @@ export const NTXT: Record<string, NT> = {
     last: () => ['Vi hörs mer sällan nu', 'Wicki pausar påminnelserna. Öppna appen när du vill fortsätta, allt finns kvar.'],
   },
   en: {
+    saver: n => [`🔥 Your ${n}-day streak ends at midnight`, 'Save it with a 3-minute lesson before the day is over.'],
     streak: n => [`🔥 Your ${n}-day streak is on the line`, 'One 3-minute lesson is enough to keep the flame alive.'],
     review: n => [`🧠 ${n} terms are ready for review`, 'Review now, before they slip away. Takes 2 minutes.'],
     next: l => ['🕯️ Your next lesson is waiting', `${l} Four minutes, and you're one step closer to your plan.`],
@@ -126,6 +128,7 @@ export const NTXT: Record<string, NT> = {
     last: () => ['We\'ll check in less often now', 'Wicki is pausing reminders. Open the app whenever you want to continue, it\'s all still there.'],
   },
   fr: {
+    saver: n => [`🔥 Ta série de ${n} jours s’éteint à minuit`, 'Sauve-la avec une leçon de 3 minutes avant la fin de la journée.'],
     streak: n => [`🔥 Ta série de ${n} jours est en jeu`, 'Une leçon de 3 minutes suffit pour garder la flamme.'],
     review: n => [`🧠 ${n} notions sont prêtes à être révisées`, 'Révise maintenant, avant de les oublier. Ça prend 2 minutes.'],
     next: l => ['🕯️ Ta prochaine leçon t\'attend', `${l} Quatre minutes, et tu te rapproches de ton plan.`],
@@ -136,6 +139,7 @@ export const NTXT: Record<string, NT> = {
     last: () => ['On se fera plus discret', 'Wicki met les rappels en pause. Ouvre l\'app quand tu veux continuer, tout est encore là.'],
   },
   ar: {
+    saver: n => [`🔥 سلسلتك من ${n} أيام تنتهي عند منتصف الليل`, 'أنقذها بدرس مدته 3 دقائق قبل نهاية اليوم.'],
     streak: n => [`🔥 سلسلتك من ${n} أيام في خطر`, 'درس واحد مدته 3 دقائق يكفي لإبقاء الشعلة مضيئة.'],
     review: n => [`🧠 ${n} مفاهيم جاهزة للمراجعة`, 'راجعها الآن قبل أن تنساها. تستغرق دقيقتين.'],
     next: l => ['🕯️ درسك التالي بانتظارك', `${l} أربع دقائق وتقترب خطوة من خطتك.`],

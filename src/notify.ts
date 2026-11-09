@@ -41,7 +41,8 @@ export function planMessages(S: State, now = new Date()): Msg[] {
   const lesson = cur ? `/lesson?mode=node&id=${cur.id}` : '/practice';
   // I dag: bara om dagens lågan inte redan är tänd.
   if (!lit) {
-    if (n > 0) add(0, 'streak', L.streak(n), lesson);
+    if (n >= 3) add(0, 'saver', L.saver(n), lesson);
+    else if (n > 0) add(0, 'streak', L.streak(n), lesson);
     else if (!S.lessons) add(0, 'start', L.start(), lesson);
     else if (due) add(0, 'review', L.review(due), '/lesson?mode=review');
     else if (cur) add(0, 'next', L.next(nextName), lesson);

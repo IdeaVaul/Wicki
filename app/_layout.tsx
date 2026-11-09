@@ -14,6 +14,8 @@ import { useReminders } from '../src/ui/grow';
 import { useLeagueSync } from '../src/ui/online';
 import { onOpen, reschedule } from '../src/notify';
 import { track } from '../src/analytics';
+import { Splash } from '../src/ui/Splash';
+import { checkStreak } from '../src/engine/streak';
 
 /** Håller statistik och kraschrapporter i takt med samtycket, och loggar vilken skärm man är på. */
 function Telemetry() {
@@ -33,7 +35,7 @@ function Reminders() {
     update(s => { s.grow = s.grow || {}; s.grow.lastN = id; }); track('push_open', { kind });
     setTimeout(() => { try { router.push(url as any); } catch { } }, 350);
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const sub = AppState.addEventListener('change', (st: string) => { if (st === 'active') reschedule(Sref.current); }); return () => sub?.remove?.(); }, []);
+  useEffect(() => { update(s => { checkStreak(s); }); const sub = AppState.addEventListener('change', (st: string) => { if (st === 'active') { update(s => { checkStreak(s); }); reschedule(Sref.current); } }); return () => sub?.remove?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -75,6 +77,7 @@ function Inner() {
       <Stack.Screen name="auth-callback" options={{ animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="pause" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
+    <Splash />
   </>;
 }
 export default function Root() {
