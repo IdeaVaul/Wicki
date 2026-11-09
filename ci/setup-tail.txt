@@ -1,0 +1,40 @@
+
+added 577 packages, and audited 578 packages in 25s
+
+54 packages are looking for funding
+  run `npm fund` for details
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+› Installing 21 SDK 58.0.0 compatible native modules and 5 other packages using npm
+> npm install --save @supabase/supabase-js react-native-url-polyfill @expo-google-fonts/rubik @expo-google-fonts/lexend @expo-google-fonts/ibm-plex-sans-arabic
+
+added 2 packages, changed 3 packages, and audited 580 packages in 2s
+
+55 packages are looking for funding
+  run `npm fund` for details
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+› Installing using npm
+> npm install --save --save-dev typescript @types/react
+
+up to date, audited 580 packages in 926ms
+
+55 packages are looking for funding
+  run `npm fund` for details
+
+5 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
