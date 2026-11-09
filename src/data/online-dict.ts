@@ -1,5 +1,11 @@
 /** Översättningar för veckoliga, vänner, Fråga Wicki (AI) och marknadsdata. [svenska, engelska, franska, arabiska] */
 const ROWS: [string, string, string, string][] = [
+  ['Fortsätt med e-post', 'Continue with email', 'Continuer avec l’e-mail', 'المتابعة بالبريد الإلكتروني'],
+  ['Välkommen', 'Welcome', 'Bienvenue', 'مرحبًا'],
+  ['Välkommen!', 'Welcome!', 'Bienvenue !', 'مرحبًا!'],
+  ['Dina framsteg är sparade i kontot och följer med till alla dina enheter.', 'Your progress is saved to your account and follows you to all your devices.', 'Ta progression est enregistrée dans ton compte et te suit sur tous tes appareils.', 'تقدمك محفوظ في حسابك ويرافقك على جميع أجهزتك.'],
+  ['Dagar i rad', 'Day streak', 'Jours d’affilée', 'أيام متتالية'],
+  ['Lektioner', 'Lessons', 'Leçons', 'الدروس'],
   ['Din svit', 'Your streak', 'Ta série', 'سلسلتك'],
   ['Dagens låga är tänd!', 'Today’s flame is lit!', 'La flamme du jour est allumée !', 'شعلة اليوم مضاءة!'],
   ['Gör en lektion i dag så håller lågan.', 'Do a lesson today to keep the flame alive.', 'Fais une leçon aujourd’hui pour garder la flamme.', 'أنجز درسًا اليوم لتبقى الشعلة مضاءة.'],
