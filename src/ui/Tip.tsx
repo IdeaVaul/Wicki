@@ -9,11 +9,11 @@ import { track } from '../analytics';
  *  Regler: kort text, i den ordning man använder appen, och först när det finns något att visa. */
 let busy = false; // högst ett tips åt gången i hela appen
 export function Tip({ id, show, text, children, below = true }: { id: string; show: boolean; text: string; children: React.ReactNode; below?: boolean }) {
-  const { S, c, update } = useStore(); const ref = useRef<View>(null);
+  const { S, c, update } = useStore(); const ref = useRef<any>(null);
   const seen = !!S.grow?.seen?.['tip_' + id]; const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   useEffect(() => {
     if (!show || seen || busy || !S.onb) return;
-    const h = setTimeout(() => { if (busy) return; ref.current?.measureInWindow((x, y, w, hh) => { if (!w || !hh) return; busy = true; setBox({ x, y, w, h: hh }); track('tip_show', { id }); }); }, 900);
+    const h = setTimeout(() => { if (busy) return; ref.current?.measureInWindow((x: number, y: number, w: number, hh: number) => { if (!w || !hh) return; busy = true; setBox({ x, y, w, h: hh }); track('tip_show', { id }); }); }, 900);
     return () => clearTimeout(h);
   }, [show, seen, S.onb]); // eslint-disable-line react-hooks/exhaustive-deps
   const done = () => { busy = false; setBox(null); update(s => { s.grow = s.grow || {}; s.grow.seen = { ...(s.grow.seen || {}), ['tip_' + id]: 1 }; }); };
