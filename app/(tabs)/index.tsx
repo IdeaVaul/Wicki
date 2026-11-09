@@ -76,7 +76,7 @@ export default function Home() {
           <T raw s={14} c={c.muted}>{`${cur.k === 'les' ? 4 : 3} min · +${cur.k === 'test' ? 20 : 10} XP`}</T></View>
         <Ionicons name={rtl ? 'chevron-back' : 'chevron-forward'} size={22} color={c.muted} />
       </Card> : <Card><T w="b" s={17}>Du har klarat hela kursen!</T><T c={c.muted}>Repetera och öva så sitter kunskapen kvar.</T></Card>}
-      <Tip id="start" show={!S.lessons && !!cur} text="Börja här. Din första lektion tar bara några minuter."><Btn testID="start" label={!cur ? 'Öva' : cur.k === 'chest' ? 'Öppna kistan' : 'Starta lektion'} onPress={go}
+      <Tip id="start" paths={['/']} show={!S.lessons && !!cur} text="Börja här. Din första lektion tar bara några minuter."><Btn testID="start" label={!cur ? 'Öva' : cur.k === 'chest' ? 'Öppna kistan' : 'Starta lektion'} onPress={go}
         right={<Ionicons name={rtl ? 'arrow-back' : 'arrow-forward'} size={20} color={c.on} />} /></Tip>
       {(() => { const nv = VIDEOS.find(x => !(S.vids || {})[x.id]) || VIDEOS[0]; return <Card testID="video" onPress={() => router.push({ pathname: '/video', params: { id: nv.id } })} style={{ flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ width: 58, height: 58, borderRadius: 16, backgroundColor: c.priSoft, borderWidth: 1, borderColor: c.glassB, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="film" size={28} color={c.pri} /></View>
